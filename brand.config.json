@@ -1,0 +1,25 @@
+{
+  "$schema": "./node_modules/@achoo254/brand/brand.config.schema.json",
+  "appName": "Chùa Nhỏ",
+  "shortName": "Chùa Nhỏ",
+  "description": "Gõ mõ theo nhịp, thắp hương, check-in khẩu nghiệp và nghe Lofi Chùa Nhỏ. Vài phút mỗi ngày cho tâm bớt lag.",
+  "colors": {
+    "primary": "#e0b25a",
+    "background": "#2b1747",
+    "backgroundDark": "#2b1747"
+  },
+  "icon": "brand/app-icon.svg",
+  "iconMaskable": "brand/app-icon-maskable.svg",
+  "webInstall": true,
+  "appIds": {
+    "ios": "com.hoandat.chuanho"
+  },
+  "urlScheme": "com.hoandat.chuanho",
+  "primaryTenant": {
+    "domain": "hoandat.com",
+    "issuer": "https://auth.hoandat.com"
+  },
+  "hostTemplates": {
+    "web": "chuanho.{domain}"
+  }
+}

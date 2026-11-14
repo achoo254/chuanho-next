@@ -1,0 +1,76 @@
+/* =====================================================================
+   CHÙA NHỎ DESIGN TOKENS: lofi sunset over the temple yard
+   One designed theme (no light/dark switch): a deep sunset purple,
+   warm cream text, temple gold for what can be pressed. This file holds
+   the ONLY colour literals of the web app (checked by `pnpm check:tokens`
+   and `pnpm check:brand`); every stylesheet reads these custom
+   properties, including the shared shell's (app-shell.css) names.
+
+   `pnpm check:tokens` checks every text colour below on every surface
+   at WCAG AA 4.5:1.
+   ===================================================================== */
+
+:root {
+  color-scheme: dark;
+
+  /* type: Be Vietnam Pro, self-hosted with the Vietnamese subset (main.tsx) */
+  --font-sans: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-sans);
+
+  /* spacing, sizes, radii, motion */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --gutter: 16px;
+  --container: 720px;
+  --tap: 44px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-full: 999px;
+  --dur-fast: 150ms;
+  --dur-base: 220ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* the sunset */
+  --c-bg: #2b1747; /* page: sunset purple (brand.config.json background) */
+  --c-bg-deep: #1d0f33; /* the backdrop's darker edge */
+  --c-glow: #5a2d5e; /* the low sun's warm glow behind the yard */
+
+  /* surfaces */
+  --c-surface: #371e5a;
+  --c-surface-raised: #43266b;
+  --c-topbar: #2b1747;
+
+  /* text and lines */
+  --c-text: #fbf1e2; /* warm cream */
+  --c-text-muted: #d6c6e8; /* lavender cream */
+  --c-border: #5b3d86;
+
+  /* temple gold: links and accents (text), the solid Start button (fill) */
+  --c-primary: #f0c978;
+  --c-primary-solid: #e0b25a;
+  --c-primary-solid-hover: #ebc171;
+  --c-on-primary: #2b1747;
+
+  /* shadows */
+  --shadow-gold: 0 10px 30px -10px rgb(224 178 90 / 0.6);
+  --shadow-focus: 0 0 0 3px rgb(240 201 120 / 0.4);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: 24px;
+  }
+}
+
+/* Reduced motion: every duration collapses, so transitions stop too. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 1ms;
+    --dur-base: 1ms;
+  }
+}
