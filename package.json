@@ -15,11 +15,13 @@
     "lint": "eslint . --max-warnings=0 && pnpm check:brand && pnpm check:tokens && pnpm check:gentle",
     "check:brand": "check-brand --config brand.config.json --dir apps --dir packages --dir scripts --skip-dir dist --skip-dir test-results --skip-dir playwright-report --skip-dir generated --skip-dir decoders --source-file '\\.(ts|tsx|js|mjs|cjs|css|html)$' --code-file '\\.(ts|tsx|js|mjs|cjs)$' --test-file '(^|/)(e2e|test)/|\\.(test|spec)\\.tsx?$' --jsx-text --html-word --skip-comment-lines --ignore-marker 'check-brand-ignore:' --colour-dir apps/web/src --token-file apps/web/src/ui/tokens.css --hint 'read it from apps/web/src/brand.ts'",
     "check:tokens": "tsx scripts/check-tokens.ts",
-    "check:gentle": "tsx scripts/check-gentle-bank.ts"
+    "check:gentle": "tsx scripts/check-gentle-bank.ts",
+    "brand:gen": "tsx scripts/brand-gen.ts"
   },
   "devDependencies": {
     "@achoo254/brand": "github:achoo254/shared-next#v0.12.0&path:/packages/brand",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.63.0",
     "@types/node": "^26.6.3",
     "eslint": "^10.11.0",
     "eslint-plugin-jsx-a11y": "6.10.2",

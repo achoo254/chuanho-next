@@ -1,0 +1,50 @@
+{
+  "id": "/",
+  "name": "Chùa Nhỏ",
+  "short_name": "Chùa Nhỏ",
+  "description": "Gõ mõ theo nhịp, thắp hương, check-in khẩu nghiệp và nghe Lofi Chùa Nhỏ. Vài phút mỗi ngày cho tâm bớt lag.",
+  "lang": "vi",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#2b1747",
+  "background_color": "#2b1747",
+  "categories": [
+    "entertainment",
+    "lifestyle"
+  ],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
