@@ -8,6 +8,7 @@ import { useGameSession } from '../game/game-session-context';
 import { useI18n } from '../i18n/i18n';
 import { ScreenHeader } from '../ui/screen-header';
 import { canvasToPng, downloadBlob, drawShareCard } from './draw-share-card';
+import { shareImageFile } from './share-image-file';
 
 const FILE_NAME = 'chuanho-the-chia-se.png';
 
@@ -50,19 +51,7 @@ export function ShareCardScreen({ onBack }: { onBack: () => void }): ReactNode {
   }, [progress.bestCombo, progress.peacefulDays, restraintCount, comboLabel, daysLabel, restraintLabel, tagline]);
 
   async function post(blob: Blob): Promise<void> {
-    const file = new File([blob], FILE_NAME, { type: 'image/png' });
-    if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file] });
-        return;
-      } catch (error) {
-        // The player closing the share sheet is not an error.
-        if (error instanceof DOMException && error.name === 'AbortError') return;
-        console.warn('Share failed, downloading instead', error);
-      }
-    }
-    downloadBlob(blob, FILE_NAME);
-    setNotice(t('share.downloaded'));
+    if ((await shareImageFile(blob, FILE_NAME)) === 'downloaded') setNotice(t('share.downloaded'));
   }
 
   return (

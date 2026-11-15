@@ -1,6 +1,7 @@
 /**
  * The 9:16 share card (1080×1920) for a Story: the temple yard, the mascot, and only positive achievements (best
- * combo, peaceful days, times held back when above zero). Never any check-in content. Colours are read from the
+ * combo, peaceful days, times held back when above zero). The drawing steps are exported so the 3D game's card
+ * (a picture taken from the scene instead of the mascot) uses the very same header, panels and font handling. Never any check-in content. Colours are read from the
  * design tokens at draw time, and the Vietnamese font is loaded before drawing so diacritics render correctly.
  */
 
@@ -21,7 +22,7 @@ function token(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-function loadImage(src: string): Promise<HTMLImageElement> {
+export function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
@@ -31,13 +32,13 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 /** Loads the weights the card uses, with Vietnamese sample text so the Vietnamese subset is fetched too. */
-async function loadFonts(sample: string): Promise<void> {
+export async function loadFonts(sample: string): Promise<void> {
   if (!('fonts' in document)) return;
   await Promise.all(['800 96px', '600 48px'].map((spec) => document.fonts.load(`${spec} ${FONT_FAMILY}`, sample)));
 }
 
 /** Draws `image` to cover the whole card, cropping the overflow, like CSS `background-size: cover`. */
-function drawCover(ctx: CanvasRenderingContext2D, image: HTMLImageElement): void {
+export function drawCover(ctx: CanvasRenderingContext2D, image: HTMLImageElement): void {
   const scale = Math.max(CARD_WIDTH / image.width, CARD_HEIGHT / image.height);
   const w = image.width * scale;
   const h = image.height * scale;
@@ -49,24 +50,33 @@ function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: num
   ctx.roundRect(x, y, w, h, r);
 }
 
-export async function drawShareCard(content: ShareCardContent): Promise<HTMLCanvasElement> {
-  const sample = [content.appName, content.tagline, ...content.stats.map((s) => s.label)].join(' ');
-  const [background, mascot] = await Promise.all([loadImage('/art/bg-courtyard.webp'), loadImage('/art/sticker-mophat.webp'), loadFonts(sample)]);
+/** The words every card samples to fetch the Vietnamese font subset before drawing. */
+export function cardFontSample(content: ShareCardContent): string {
+  return [content.appName, content.tagline, ...content.stats.map((s) => s.label)].join(' ');
+}
 
+/** A blank card canvas and its 2D context. */
+export function createCardCanvas(): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
   const canvas = document.createElement('canvas');
   canvas.width = CARD_WIDTH;
   canvas.height = CARD_HEIGHT;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D is not available');
+  return { canvas, ctx };
+}
 
-  drawCover(ctx, background);
-  // Darken the lower half so the text reads over any part of the picture.
+/** The picture under the words: `image` covering the card, darkened towards the bottom so the text reads. */
+export function drawCardBackdrop(ctx: CanvasRenderingContext2D, image: HTMLImageElement): void {
+  drawCover(ctx, image);
   const shade = ctx.createLinearGradient(0, CARD_HEIGHT * 0.35, 0, CARD_HEIGHT);
   shade.addColorStop(0, token('--c-card-shade-top'));
   shade.addColorStop(1, token('--c-card-shade-bottom'));
   ctx.fillStyle = shade;
   ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+}
 
+/** App name and tagline at the top (leaves the soft text shadow on for whatever is drawn next). */
+export function drawCardHeader(ctx: CanvasRenderingContext2D, content: ShareCardContent): void {
   ctx.textAlign = 'center';
   ctx.fillStyle = token('--c-text');
   ctx.shadowColor = token('--c-drop-shadow');
@@ -76,22 +86,15 @@ export async function drawShareCard(content: ShareCardContent): Promise<HTMLCanv
   ctx.font = `600 46px ${FONT_FAMILY}`;
   ctx.fillStyle = token('--c-primary');
   ctx.fillText(content.tagline, CARD_WIDTH / 2, 310);
+}
 
-  // The mascot as a sticker on a soft white disc.
-  ctx.shadowBlur = 40;
-  ctx.fillStyle = token('--c-sticker-backing');
-  ctx.beginPath();
-  ctx.arc(CARD_WIDTH / 2, 780, 330, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.drawImage(mascot, CARD_WIDTH / 2 - 300, 480, 600, 600);
-
-  // One panel per achievement.
+/** One panel per achievement from `top` down, then the address at the bottom. Expects the shadow already off. */
+export function drawCardStats(ctx: CanvasRenderingContext2D, content: ShareCardContent, top = 1200): void {
   const panelW = 860;
   const panelH = 190;
   content.stats.forEach((stat, index) => {
     const x = (CARD_WIDTH - panelW) / 2;
-    const y = 1200 + index * (panelH + 36);
+    const y = top + index * (panelH + 36);
     ctx.fillStyle = token('--c-card-panel');
     roundedRect(ctx, x, y, panelW, panelH, 48);
     ctx.fill();
@@ -109,6 +112,24 @@ export async function drawShareCard(content: ShareCardContent): Promise<HTMLCanv
   ctx.fillStyle = token('--c-text');
   ctx.font = `600 40px ${FONT_FAMILY}`;
   ctx.fillText(content.host, CARD_WIDTH / 2, CARD_HEIGHT - 110);
+}
+
+export async function drawShareCard(content: ShareCardContent): Promise<HTMLCanvasElement> {
+  const [background, mascot] = await Promise.all([loadImage('/art/bg-courtyard.webp'), loadImage('/art/sticker-mophat.webp'), loadFonts(cardFontSample(content))]);
+  const { canvas, ctx } = createCardCanvas();
+  drawCardBackdrop(ctx, background);
+  drawCardHeader(ctx, content);
+
+  // The mascot as a sticker on a soft white disc.
+  ctx.shadowBlur = 40;
+  ctx.fillStyle = token('--c-sticker-backing');
+  ctx.beginPath();
+  ctx.arc(CARD_WIDTH / 2, 780, 330, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.drawImage(mascot, CARD_WIDTH / 2 - 300, 480, 600, 600);
+
+  drawCardStats(ctx, content);
   return canvas;
 }
 
