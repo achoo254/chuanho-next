@@ -16,9 +16,10 @@ export type Triple = readonly [number, number, number];
 export class PartBuilder {
   private readonly parts: Mesh[] = [];
 
+  /** Shared with builders that shape their own parts (the vertex-coloured lotus stand). */
   constructor(
-    private readonly scene: Scene,
-    private readonly palette: MaterialPalette,
+    readonly scene: Scene,
+    readonly palette: MaterialPalette,
   ) {}
 
   private place(mesh: Mesh, surface: SurfaceName, position: Triple, rotation: Triple = [0, 0, 0], scaling: Triple = [1, 1, 1]): Mesh {
@@ -46,9 +47,9 @@ export class PartBuilder {
     return this.place(mesh, surface, position, undefined, scaling);
   }
 
-  torus(surface: SurfaceName, diameter: number, thickness: number, position: Triple): Mesh {
+  torus(surface: SurfaceName, diameter: number, thickness: number, position: Triple, rotation?: Triple): Mesh {
     const mesh = CreateTorus('part', { diameter, thickness, tessellation: 24 }, this.scene);
-    return this.place(mesh, surface, position);
+    return this.place(mesh, surface, position, rotation);
   }
 
   /**

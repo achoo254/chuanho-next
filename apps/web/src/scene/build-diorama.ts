@@ -1,11 +1,13 @@
 /**
  * Builds the yard from the layout: loads every kit asset once (model or placeholder, in parallel), places each copy,
- * tags the tappable props, and leaves empty anchors where the character and the wooden fish's strike point go.
+ * tags the tappable props, hides the merit decorations until unlocked, sets the lotus stand under the wooden fish
+ * (tapping it counts as tapping the wooden fish) and leaves an empty anchor where the character stands.
  */
 import { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import type { Scene } from '@babylonjs/core/scene';
-import { CHARACTER_SPOT, DIORAMA_LAYOUT, PROP_ASSETS, type PropAssetId } from './diorama-layout';
+import type { DecorationId } from '../game/player-progress';
+import { CHARACTER_SPOT, DIORAMA_LAYOUT, MO_STAND_SPOT, PROP_ASSETS, type PropAssetId } from './diorama-layout';
 import type { MaterialPalette } from './placeholder-materials';
 import { type PropPrototype, loadPropPrototype } from './prop-asset-library';
 import type { InteractivePropId } from './world-actions';
@@ -18,8 +20,14 @@ export interface PropMetadata {
 export interface Diorama {
   /** The root node of each tappable prop. */
   readonly props: ReadonlyMap<InteractivePropId, TransformNode>;
-  /** Where the character stands; the placeholder chibi is its child. */
+  /** Where the character stands (the coded character is attached here by the play stage). */
   readonly characterSpot: TransformNode;
+  /** The lotus stand the wooden fish sits on. */
+  readonly moStand: TransformNode;
+  /** Merit decorations, disabled until unlocked. */
+  readonly decorations: ReadonlyMap<DecorationId, TransformNode>;
+  /** A new copy of a kit asset (the mallet in the character's hand). */
+  spawn(asset: PropAssetId, name: string): TransformNode;
   /** Every mesh that should cast a shadow. */
   readonly shadowCasters: readonly AbstractMesh[];
   /** How many assets came from real models rather than placeholders. */
@@ -55,7 +63,20 @@ export async function buildDiorama(
   };
 
   const props = new Map<InteractivePropId, TransformNode>();
+  const decorations = new Map<DecorationId, TransformNode>();
   const shadowCasters: AbstractMesh[] = [];
+  // First copy of the lotus stand: the decoration lotus is an instance of it, so hiding that one leaves this visible.
+  const moStand = prototypeOf('lotusStand').spawn('mo-stand');
+  moStand.position.set(MO_STAND_SPOT.position[0], MO_STAND_SPOT.position[1], MO_STAND_SPOT.position[2]);
+  moStand.rotation.y = MO_STAND_SPOT.rotationY;
+  const standMetadata: PropMetadata = { propId: 'mo' };
+  moStand.metadata = standMetadata;
+  for (const mesh of meshesOf(moStand)) {
+    mesh.receiveShadows = true;
+    mesh.isPickable = true;
+    shadowCasters.push(mesh);
+  }
+
   DIORAMA_LAYOUT.forEach((placement, index) => {
     const node = prototypeOf(placement.asset).spawn(`${placement.asset}-${index}`);
     node.position.set(placement.position[0], placement.position[1], placement.position[2]);
@@ -72,6 +93,10 @@ export async function buildDiorama(
       node.metadata = metadata;
       props.set(placement.interactive, node);
     }
+    if (placement.decoration) {
+      decorations.set(placement.decoration, node);
+      node.setEnabled(false);
+    }
     // Scenery never moves: freezing its world matrix saves work every frame.
     if (!placement.interactive) for (const mesh of meshes) mesh.freezeWorldMatrix();
   });
@@ -79,18 +104,15 @@ export async function buildDiorama(
   const characterSpot = new TransformNode('character-spot', scene);
   characterSpot.position.set(CHARACTER_SPOT.position[0], CHARACTER_SPOT.position[1], CHARACTER_SPOT.position[2]);
   characterSpot.rotation.y = CHARACTER_SPOT.rotationY;
-  const character = prototypeOf('character').spawn('character');
-  character.parent = characterSpot;
-  for (const mesh of meshesOf(character)) {
-    mesh.isPickable = false;
-    shadowCasters.push(mesh);
-  }
 
   const modelCount = [...prototypes.values()].filter((p) => p.source === 'model').length;
   return {
     props,
     characterSpot,
+    moStand,
+    decorations,
     shadowCasters,
+    spawn: (asset, name) => prototypeOf(asset).spawn(name),
     modelCount,
     dispose() {
       for (const prototype of prototypes.values()) prototype.dispose();

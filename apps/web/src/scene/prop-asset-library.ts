@@ -2,6 +2,9 @@
  * Turns an asset name into something that can be placed in the yard: the AI-made model from `/models/<file>.glb`
  * when it exists, the primitive placeholder otherwise. Placing the same asset again reuses its geometry: placeholders
  * become GPU instances, models become clones sharing geometry and materials.
+ *
+ * Models are generated at real-world size (metres) while the diorama exaggerates its props, so each model is scaled
+ * to the height of the placeholder it replaces: the layout keeps working whatever size a model arrives in.
  */
 import type { AssetContainer } from '@babylonjs/core/assetContainer';
 import { LoadAssetContainerAsync } from '@babylonjs/core/Loading/sceneLoader';
@@ -10,9 +13,10 @@ import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import '@babylonjs/core/Meshes/instancedMesh';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import type { Scene } from '@babylonjs/core/scene';
-import { PROP_ASSET_FILES, type PropAssetId } from './diorama-layout';
-import { buildBellTower, buildBodhiTree, buildLantern, buildPavingStone, buildPlinth, buildTempleHall } from './placeholder-kit-architecture';
-import { buildBell, buildBowl, buildCenser, buildCharacter, buildMo, buildSutraShelf, buildWoodenBoard } from './placeholder-kit-props';
+import { type ModelFit, PROP_ASSET_FILES, PROP_MODEL_FITS, type PropAssetId } from './diorama-layout';
+import { buildBellTower, buildBodhiTree, buildLantern, buildPavingStone, buildPillar, buildPlinth, buildTempleHall } from './placeholder-kit-architecture';
+import { buildBell, buildBowl, buildCenser, buildMallet, buildMo, buildSutraShelf, buildWoodenBoard } from './placeholder-kit-props';
+import { buildLotusStand } from './placeholder-lotus-stand';
 import type { MaterialPalette } from './placeholder-materials';
 import { PartBuilder } from './placeholder-shapes';
 
@@ -27,6 +31,7 @@ const PLACEHOLDERS: Readonly<Record<PropAssetId, (kit: PartBuilder) => Mesh>> = 
   plinth: buildPlinth,
   pavingStone: buildPavingStone,
   templeHall: buildTempleHall,
+  pillar: buildPillar,
   bodhiTree: buildBodhiTree,
   bellTower: buildBellTower,
   lantern: buildLantern,
@@ -36,7 +41,8 @@ const PLACEHOLDERS: Readonly<Record<PropAssetId, (kit: PartBuilder) => Mesh>> = 
   bowl: buildBowl,
   woodenBoard: buildWoodenBoard,
   mo: buildMo,
-  character: buildCharacter,
+  lotusStand: buildLotusStand,
+  mallet: buildMallet,
 };
 
 function placeholderPrototype(scene: Scene, palette: MaterialPalette, asset: PropAssetId): PropPrototype {
@@ -59,14 +65,35 @@ function placeholderPrototype(scene: Scene, palette: MaterialPalette, asset: Pro
   };
 }
 
-function modelPrototype(scene: Scene, container: AssetContainer): PropPrototype {
+/** Height of an asset's placeholder: what its model is scaled to. */
+function placeholderHeight(scene: Scene, palette: MaterialPalette, asset: PropAssetId): number {
+  const mesh = PLACEHOLDERS[asset](new PartBuilder(scene, palette));
+  const { minimum, maximum } = mesh.getBoundingInfo().boundingBox;
+  mesh.dispose();
+  return maximum.y - minimum.y;
+}
+
+function modelPrototype(scene: Scene, container: AssetContainer, placeholderTall: number, fitting: ModelFit): PropPrototype {
   const copies: TransformNode[] = [];
+  let fitScale: number | null = null;
   return {
     source: 'model',
     spawn(name) {
       const entries = container.instantiateModelsToScene((sourceName) => `${name}/${sourceName}`, false, { doNotInstantiate: true });
       const root = new TransformNode(name, scene);
-      for (const node of entries.rootNodes) node.parent = root;
+      // The fit node carries the size correction, so the layout's own scale on the root still applies on top.
+      const fit = new TransformNode(`${name}/fit`, scene);
+      fit.parent = root;
+      for (const node of entries.rootNodes) node.parent = fit;
+      fit.rotation.set(fitting.pitch ?? 0, fitting.yaw ?? 0, 0);
+      if (fitScale === null) {
+        const { min, max } = fit.getHierarchyBoundingVectors(true);
+        const size = max.subtract(min);
+        const measured = fitting.largest !== undefined ? Math.max(size.x, size.y, size.z) : size.y;
+        const target = fitting.largest ?? fitting.height ?? placeholderTall;
+        fitScale = measured > 1e-4 && target > 0 ? target / measured : 1;
+      }
+      fit.scaling.setAll(fitScale);
       copies.push(root);
       return root;
     },
@@ -91,8 +118,10 @@ function isBinaryGltf(bytes: Uint8Array): boolean {
 }
 
 async function loadModel(scene: Scene, asset: PropAssetId, signal: AbortSignal): Promise<AssetContainer | null> {
+  const file = PROP_ASSET_FILES[asset];
+  if (!file) return null;
   try {
-    const response = await fetch(`/models/${PROP_ASSET_FILES[asset]}`, { signal });
+    const response = await fetch(`/models/${file}`, { signal });
     if (!response.ok) return null;
     const bytes = new Uint8Array(await response.arrayBuffer());
     if (!isBinaryGltf(bytes)) return null;
@@ -108,5 +137,6 @@ async function loadModel(scene: Scene, asset: PropAssetId, signal: AbortSignal):
 /** The model when there is one, the placeholder otherwise. Never rejects. */
 export async function loadPropPrototype(scene: Scene, palette: MaterialPalette, asset: PropAssetId, signal: AbortSignal): Promise<PropPrototype> {
   const container = await loadModel(scene, asset, signal);
-  return container ? modelPrototype(scene, container) : placeholderPrototype(scene, palette, asset);
+  if (!container) return placeholderPrototype(scene, palette, asset);
+  return modelPrototype(scene, container, placeholderHeight(scene, palette, asset), PROP_MODEL_FITS[asset] ?? {});
 }

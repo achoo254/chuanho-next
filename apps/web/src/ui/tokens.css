@@ -143,6 +143,21 @@
   --c-scene-mo: #8a4b2e;
   --c-scene-book: #e9c46a;
 
+  /* 3D play: the mallet, the lotus stand, dust and smoke puffs, glowing note orbs */
+  --c-scene-mallet-head: #f6ecd9;
+  --c-scene-mo-mouth: #3b1d12;
+  --c-scene-lotus-tip: #fbd6e3;
+  --c-scene-dust: #efe4d6;
+  --c-scene-smoke: #e8e0f0;
+  --c-scene-orb: #ffd27a;
+
+  /* the floating sutra paper over the 3D scene (text checked by check:tokens) */
+  --c-paper: #f8eedb;
+  --c-paper-edge: #e6d3b0;
+  --c-paper-ink: #3a2410;
+  --c-paper-ink-dim: #6f5a45;
+  --c-paper-lit: #9b2c1c;
+
   /* the 3D game HUD */
   --c-hud-panel: rgb(29 15 51 / 0.72);
   --c-hud-panel-hover: rgb(67 38 107 / 0.9);

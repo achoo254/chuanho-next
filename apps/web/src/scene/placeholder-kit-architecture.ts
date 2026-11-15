@@ -1,5 +1,5 @@
 /**
- * Placeholder architecture and nature for the yard, built from primitives until the AI-made models arrive: the
+ * Architecture and nature of the yard, built in code from primitives that wear the AI-made tiling textures: the
  * plinth the diorama stands on, a paving stone, the main hall with a two-tier curved roof, the bodhi tree, the bell
  * tower and a hanging lantern. Each builder returns one merged mesh standing on y = 0, facing −z (the camera).
  */
@@ -24,7 +24,6 @@ export function buildTempleHall(kit: PartBuilder): Mesh {
   kit.box('stone', [3, 0.3, 0.8], [0, 0.15, -2.65]);
   kit.box('wall', [7, 2.4, 3.2], [0, 1.8, 0.2]);
   kit.box('lacquer', [1.6, 1.8, 0.1], [0, 1.5, -1.42]);
-  for (const x of [-3.8, -1.4, 1.4, 3.8]) kit.cylinder('lacquer', 0.42, 0.48, 2.6, [x, 1.9, -1.9]);
   kit.hipRoof('roof', 9.6, 4.6, 1.3, 0.56, [0, 3.65, 0.2]);
   kit.box('wall', [4.2, 0.5, 2.1], [0, 4.5, 0.2]);
   kit.hipRoof('roof', 6.4, 1.2, 1.3, 0.5, [0, 5.35, 0.2]);
@@ -34,6 +33,14 @@ export function buildTempleHall(kit: PartBuilder): Mesh {
   for (const x of [-4.75, 4.75]) for (const z of [-2.5, 2.9]) kit.sphere('gold', 0.42, [x, 3.15, z]);
   for (const x of [-3.1, 3.1]) for (const z of [-1.4, 1.8]) kit.sphere('gold', 0.32, [x, 4.8, z]);
   return kit.merge('temple-hall');
+}
+
+/** A red lacquered pillar on a gold base, with a small gold capital (the hall's front pillars). */
+export function buildPillar(kit: PartBuilder): Mesh {
+  kit.cylinder('gold', 0.62, 0.66, 0.16, [0, 0.08, 0]);
+  kit.cylinder('lacquer', 0.42, 0.46, 2.36, [0, 1.34, 0]);
+  kit.cylinder('gold', 0.56, 0.46, 0.14, [0, 2.55, 0]);
+  return kit.merge('pillar');
 }
 
 export function buildBodhiTree(kit: PartBuilder): Mesh {
@@ -56,13 +63,17 @@ export function buildBellTower(kit: PartBuilder): Mesh {
   return kit.merge('bell-tower');
 }
 
-/** A red lantern hanging from a wooden pole; the arm reaches towards +x. */
+/**
+ * A red lantern hanging from a wooden pole: a squat red globe between two gold caps, with a gold tassel below. The
+ * arm reaches towards +x.
+ */
 export function buildLantern(kit: PartBuilder): Mesh {
   kit.cylinder('wood', 0.12, 0.16, 2.3, [0, 1.15, 0]);
   kit.box('wood', [0.7, 0.08, 0.08], [0.3, 2.25, 0]);
-  kit.cylinder('wood', 0.02, 0.02, 0.25, [0.6, 2.1, 0]);
-  kit.sphere('lantern', 0.55, [0.6, 1.75, 0], [1, 1.2, 1], 14);
-  kit.cylinder('gold', 0.26, 0.3, 0.08, [0.6, 2.08, 0]);
-  kit.cylinder('gold', 0.3, 0.26, 0.08, [0.6, 1.42, 0]);
+  kit.cylinder('wood', 0.02, 0.02, 0.2, [0.6, 2.13, 0]);
+  kit.sphere('lantern', 0.6, [0.6, 1.76, 0], [1, 0.82, 1], 16);
+  kit.cylinder('gold', 0.24, 0.32, 0.09, [0.6, 2.02, 0]);
+  kit.cylinder('gold', 0.32, 0.24, 0.09, [0.6, 1.5, 0]);
+  kit.cylinder('gold', 0.03, 0.09, 0.26, [0.6, 1.32, 0]);
   return kit.merge('lantern');
 }

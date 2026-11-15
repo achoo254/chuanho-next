@@ -53,6 +53,8 @@ function pairs(tokens: TokenMap): Array<readonly [string, string, string, number
     for (const bg of SCREEN_BACKGROUNDS) list.push([`${fg} on ${bg}`, v(fg), v(bg), AA_TEXT]);
   }
   for (const bg of ['--c-primary-solid', '--c-primary-solid-hover']) list.push([`--c-on-primary on ${bg}`, v('--c-on-primary'), v(bg), AA_TEXT]);
+  // The sutra paper of the 3D chanting mode: every word state must stay readable.
+  for (const fg of ['--c-paper-ink', '--c-paper-ink-dim', '--c-paper-lit']) list.push([`${fg} on --c-paper`, v(fg), v('--c-paper'), AA_TEXT]);
   return list;
 }
 
