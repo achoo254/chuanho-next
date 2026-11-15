@@ -10,7 +10,7 @@ import { type Difficulty, generateBeatChart } from '../game/beat-pattern';
 import { useGameSession } from '../game/game-session-context';
 import type { RhythmState, TapOutcome } from '../game/rhythm-judge';
 import { useI18n } from '../i18n/i18n';
-import { useRhythmSong } from '../screens/use-rhythm-song';
+import { useRhythmSong } from '../audio/use-rhythm-song';
 import { BeatLevelCard, BeatResults } from './beat-cards';
 import { BeatCombo, BeatHud, BeatPulse } from './beat-hud';
 import { BeatJudgementAnchor, useBeatJudgement } from './beat-judgement';

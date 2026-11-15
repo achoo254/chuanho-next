@@ -10,7 +10,7 @@ import { useGameSession } from '../game/game-session-context';
 import { SUTRA_LINES, SUTRA_WORD_COUNT } from '../game/sutra-text';
 import { IconButton } from '../hud/hud-icons';
 import { useI18n } from '../i18n/i18n';
-import { useLofiBackdrop } from '../screens/use-lofi-backdrop';
+import { useLofiBackdrop } from '../audio/use-lofi-backdrop';
 import { ModeBar, type PlayModeProps, StepDoneCard, StrikeTapLayer, useRegisterStrike } from './mode-chrome';
 import { usePlayText } from './play-mode-messages';
 import { playStrikeFeedback } from './strike-feedback';

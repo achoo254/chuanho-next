@@ -4,7 +4,7 @@
  * loop when the library cannot be reached. See audio/background-music.ts.
  */
 import { useEffect } from 'react';
-import { acquireBackgroundMusic } from '../audio/background-music';
+import { acquireBackgroundMusic } from './background-music';
 
 export function useLofiBackdrop(enabled: boolean): void {
   useEffect(() => {

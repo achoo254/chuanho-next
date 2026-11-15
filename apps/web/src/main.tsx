@@ -7,7 +7,6 @@ import './ui/tokens.css';
 import '@achoo254/app-shell/app-shell.css';
 import './ui/app.css';
 import './ui/game-screens.css';
-import './ui/scene-and-tap.css';
 import './ui/game-modes.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';

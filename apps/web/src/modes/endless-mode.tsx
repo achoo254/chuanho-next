@@ -8,7 +8,7 @@ import { useGameSession } from '../game/game-session-context';
 import { MO_SKINS, isUnlocked } from '../game/player-progress';
 import { HudIcon, IconButton } from '../hud/hud-icons';
 import { useI18n } from '../i18n/i18n';
-import { useLofiBackdrop } from '../screens/use-lofi-backdrop';
+import { useLofiBackdrop } from '../audio/use-lofi-backdrop';
 import { useFloatingText } from '../ui/floating-text';
 import { ModeBar, MoFloatAnchor, type PlayModeProps, StrikeTapLayer, useRegisterStrike } from './mode-chrome';
 import { playStrikeFeedback } from './strike-feedback';

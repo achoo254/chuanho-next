@@ -1,13 +1,4 @@
-/**
- * Which experience the page shows. The 3D game is the default; the old 2D yard stays reachable with `?v=2d`
- * (or the hash `#2d`) as an escape hatch until it is removed.
- */
-
-/** True unless the address explicitly asks for the old 2D page. */
-export function isGame3dRequested(search: string, hash: string): boolean {
-  if (new URLSearchParams(search).get('v') === '2d') return false;
-  return hash.replace(/^#/, '').toLowerCase() !== '2d';
-}
+/** URL switches for the 3D game (test and comparison aids). */
 
 /** The render backend to try first; `?renderer=webgl2` forces WebGL2 for comparing the two on one device. */
 export type RendererPreference = 'auto' | 'webgl2';

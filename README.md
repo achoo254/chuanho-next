@@ -56,7 +56,7 @@ pnpm test         # vitest, tối đa 2 worker
 ## Bản 3D (mặc định)
 
 Trang mặc định là bản 3D (Babylon.js, WebGPU rồi WebGL2, canvas phủ toàn cửa sổ, HUD biểu tượng, thế giới là menu).
-Trang 2D cũ vẫn mở được bằng `?v=2d` (hoặc `#2d`) trong lúc chờ gỡ hẳn. Babylon nằm trong các gói tách riêng.
+Bản 2D cũ đã gỡ hẳn: trang chỉ còn bản 3D. Babylon nằm trong các gói tách riêng.
 
 | Tham số thêm | Tác dụng |
 |---|---|
@@ -77,7 +77,7 @@ gõ cho vui), 1 đến 3 vào thắp hương, Mõ Beat, tụng kinh, Esc về s�
   lúc chạm. Chạm liên tục thì cú gõ bắt đầu lại, không xếp hàng.
 - **Thắp hương:** giữ ngón tay hoặc chuột trên lư hương (hoặc giữ Space trên nút giữ), nén hương cháy dần, đầu than sáng, khói
   bay; xong thì thẻ nhỏ mời sang bước kế của phiên.
-- **Mõ Beat:** cùng bộ sinh nốt, chấm nhịp và nhạc tổng hợp như bản 2D; nốt là hoa sen (đèn lồng ở phách đầu ô nhịp) do AI vẽ,
+- **Mõ Beat:** bộ sinh nốt và chấm nhịp theo BPM, nhạc nền AI cộng tiếng nhịp AI; nốt là hoa sen (đèn lồng ở phách đầu ô nhịp) do AI vẽ,
   kéo đuôi lấp lánh bay theo đường cong vào vòng hào quang sau đỉnh mõ, chạm ở đâu trên màn hình cũng là gõ. Vòng hào
   quang và mép màn hình sáng nhẹ theo nhịp, một vòng thu dần báo lúc gõ; gõ trúng thì bung cánh sen và sao, chữ PERFECT,
   GOOD hiện trên hình AI; combo nằm trong khung cánh sen. Hình và nguồn: [`public/art/beat`](apps/web/public/art/beat/CREDITS.md).

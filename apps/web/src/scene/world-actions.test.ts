@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { commandForKey } from '../input/keyboard-commands';
-import { isGame3dRequested, rendererPreference } from '../engine/game-3d-flag';
+import { rendererPreference } from '../engine/game-3d-flag';
 import { INTERACTIVE_PROPS, SHORTCUT_BAR_ACTIONS, actionsForProp, isComingSoon, propForAction } from './world-actions';
 
 describe('world actions', () => {
@@ -41,15 +41,7 @@ describe('commandForKey', () => {
   });
 });
 
-describe('isGame3dRequested', () => {
-  it('is the default; only ?v=2d or #2d pick the old page', () => {
-    expect(isGame3dRequested('', '')).toBe(true);
-    expect(isGame3dRequested('?v=3d', '')).toBe(true);
-    expect(isGame3dRequested('?lang=en', '#main')).toBe(true);
-    expect(isGame3dRequested('?v=2d', '')).toBe(false);
-    expect(isGame3dRequested('', '#2D')).toBe(false);
-  });
-
+describe('rendererPreference', () => {
   it('forces WebGL2 only when asked', () => {
     expect(rendererPreference('?v=3d&renderer=webgl2')).toBe('webgl2');
     expect(rendererPreference('?v=3d')).toBe('auto');

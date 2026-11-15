@@ -4,8 +4,8 @@
  * The judge state lives in a ref (the source of truth for taps) mirrored into React state for the HUD.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { audioEngine, heardContextTime } from '../audio/audio-engine';
-import { type BackingTrack, startBackingTrack } from '../audio/backing-track';
+import { audioEngine, heardContextTime } from './audio-engine';
+import { type BackingTrack, startBackingTrack } from './backing-track';
 import type { BeatChart } from '../game/beat-pattern';
 import { type RhythmState, type TapOutcome, applyTap, expireMissedNotes, initialRhythmState } from '../game/rhythm-judge';
 

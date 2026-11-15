@@ -5,7 +5,7 @@
  */
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { audioEngine, playSample, unlockAudio } from '../audio/audio-engine';
-import { useLofiBackdrop } from '../screens/use-lofi-backdrop';
+import { useLofiBackdrop } from '../audio/use-lofi-backdrop';
 import { brand } from '../brand';
 import { NoWebglFallback } from '../fallback/no-webgl-fallback';
 import { useGameSession } from '../game/game-session-context';
