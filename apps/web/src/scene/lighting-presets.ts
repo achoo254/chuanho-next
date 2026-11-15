@@ -1,10 +1,10 @@
 /**
- * Time-of-day looks for the diorama as plain data: sunset (the default, warm light with purple shade), lantern night
+ * Time-of-day looks for the diorama as plain data: daylight (the default, bright and fresh), sunset, lantern night
  * and misty morning. Colours are token names from tokens.css; the engine resolves them to RGB once and then blends
  * between resolved looks, which keeps the blend pure and testable.
  */
 
-export const LIGHTING_PRESET_IDS = ['sunset', 'lanternNight', 'mistyMorning'] as const;
+export const LIGHTING_PRESET_IDS = ['daylight', 'sunset', 'lanternNight', 'mistyMorning'] as const;
 export type LightingPresetId = (typeof LIGHTING_PRESET_IDS)[number];
 
 /** An sRGB colour, each channel 0–1. */
@@ -14,6 +14,8 @@ export type Direction = readonly [number, number, number];
 export interface LightingPreset {
   readonly skyTop: string;
   readonly skyHorizon: string;
+  /** Multiplies the painted backdrop: white shows it as drawn, darker or warmer tints turn it to evening or night. */
+  readonly backdropTint: string;
   readonly fog: string;
   /** Exponential fog density: the soft haze that sells the miniature. */
   readonly fogDensity: number;
@@ -33,9 +35,28 @@ export interface LightingPreset {
 }
 
 export const LIGHTING_PRESETS: Readonly<Record<LightingPresetId, LightingPreset>> = {
+  daylight: {
+    skyTop: '--c-scene-day-sky-top',
+    skyHorizon: '--c-scene-day-sky-horizon',
+    backdropTint: '--c-scene-day-backdrop',
+    fog: '--c-scene-day-fog',
+    fogDensity: 0.008,
+    hemiSky: '--c-scene-day-hemi-sky',
+    hemiGround: '--c-scene-day-hemi-ground',
+    hemiIntensity: 1.05,
+    sun: '--c-scene-day-sun',
+    sunIntensity: 2.6,
+    sunDirection: [0.6, -0.8, 0.4],
+    lanternGlow: 0.25,
+    bloomWeight: 0.22,
+    exposure: 1.2,
+    contrast: 1.06,
+    vignetteWeight: 0.5,
+  },
   sunset: {
     skyTop: '--c-scene-sunset-sky-top',
     skyHorizon: '--c-scene-sunset-sky-horizon',
+    backdropTint: '--c-scene-sunset-backdrop',
     fog: '--c-scene-sunset-fog',
     fogDensity: 0.012,
     hemiSky: '--c-scene-sunset-hemi-sky',
@@ -53,6 +74,7 @@ export const LIGHTING_PRESETS: Readonly<Record<LightingPresetId, LightingPreset>
   lanternNight: {
     skyTop: '--c-scene-night-sky-top',
     skyHorizon: '--c-scene-night-sky-horizon',
+    backdropTint: '--c-scene-night-backdrop',
     fog: '--c-scene-night-fog',
     fogDensity: 0.018,
     hemiSky: '--c-scene-night-hemi-sky',
@@ -70,6 +92,7 @@ export const LIGHTING_PRESETS: Readonly<Record<LightingPresetId, LightingPreset>
   mistyMorning: {
     skyTop: '--c-scene-morning-sky-top',
     skyHorizon: '--c-scene-morning-sky-horizon',
+    backdropTint: '--c-scene-morning-backdrop',
     fog: '--c-scene-morning-fog',
     fogDensity: 0.03,
     hemiSky: '--c-scene-morning-hemi-sky',
@@ -90,6 +113,7 @@ export const LIGHTING_PRESETS: Readonly<Record<LightingPresetId, LightingPreset>
 export interface ResolvedLighting {
   readonly skyTop: Rgb;
   readonly skyHorizon: Rgb;
+  readonly backdropTint: Rgb;
   readonly fog: Rgb;
   readonly fogDensity: number;
   readonly hemiSky: Rgb;
@@ -110,6 +134,7 @@ export function resolveLighting(preset: LightingPreset, colourOf: (token: string
     ...preset,
     skyTop: colourOf(preset.skyTop),
     skyHorizon: colourOf(preset.skyHorizon),
+    backdropTint: colourOf(preset.backdropTint),
     fog: colourOf(preset.fog),
     hemiSky: colourOf(preset.hemiSky),
     hemiGround: colourOf(preset.hemiGround),
@@ -131,6 +156,7 @@ export function blendLighting(from: ResolvedLighting, to: ResolvedLighting, t: n
   return {
     skyTop: mix3(from.skyTop, to.skyTop, k),
     skyHorizon: mix3(from.skyHorizon, to.skyHorizon, k),
+    backdropTint: mix3(from.backdropTint, to.backdropTint, k),
     fog: mix3(from.fog, to.fog, k),
     fogDensity: mix(from.fogDensity, to.fogDensity, k),
     hemiSky: mix3(from.hemiSky, to.hemiSky, k),
@@ -156,7 +182,7 @@ export function easeInOut(t: number): number {
 /** The next look in the cycle (the HUD's time-of-day button). */
 export function nextLightingPreset(current: LightingPresetId): LightingPresetId {
   const index = LIGHTING_PRESET_IDS.indexOf(current);
-  return LIGHTING_PRESET_IDS[(index + 1) % LIGHTING_PRESET_IDS.length] ?? 'sunset';
+  return LIGHTING_PRESET_IDS[(index + 1) % LIGHTING_PRESET_IDS.length] ?? 'daylight';
 }
 
 export const isLightingPresetId = (value: unknown): value is LightingPresetId =>

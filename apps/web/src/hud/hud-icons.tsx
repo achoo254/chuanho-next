@@ -10,6 +10,7 @@ const PATHS = {
   info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 11v6M12 7.5v.5',
   soundOn: 'M4 9h4l5-4v14l-5-4H4zM16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12',
   soundOff: 'M4 9h4l5-4v14l-5-4H4zM17 9l5 6M22 9l-5 6',
+  sun: 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8',
   sunset: 'M2 18h20M6.5 18a5.5 5.5 0 0 1 11 0M12 6v3M4.9 10.9 7 13M19.1 10.9 17 13M5 22h14',
   moon: 'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z',
   mist: 'M8 5h8M4 9h12M2 13h18M6 17h14M9 21h8',
@@ -48,6 +49,7 @@ export const ACTION_ICONS: Readonly<Record<WorldAction, IconName>> = {
 };
 
 export const PRESET_ICONS: Readonly<Record<LightingPresetId, IconName>> = {
+  daylight: 'sun',
   sunset: 'sunset',
   lanternNight: 'moon',
   mistyMorning: 'mist',

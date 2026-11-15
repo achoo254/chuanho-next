@@ -30,10 +30,10 @@ import { useBabylonWorld } from './use-babylon-world';
 const TOAST_MS = 1800;
 const CHOICE_MS = 5000;
 
-/** `?light=lanternNight` (or mistyMorning) opens on another time of day; sunset otherwise. */
+/** `?light=lanternNight` (or mistyMorning) opens on another time of day; daylight otherwise. */
 function presetFromAddress(): LightingPresetId {
   const asked = new URLSearchParams(window.location.search).get('light');
-  return isLightingPresetId(asked) ? asked : 'sunset';
+  return isLightingPresetId(asked) ? asked : 'daylight';
 }
 
 export function Game3dShell(): ReactNode {

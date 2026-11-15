@@ -17,6 +17,7 @@ import type { LightingPresetId } from '../scene/lighting-presets';
 import { createMaterialPalette } from '../scene/placeholder-materials';
 import { createPostProcessing } from '../scene/post-processing';
 import { createSceneLighting } from '../scene/scene-lighting';
+import { createPaintedBackdrop } from '../scene/painted-backdrop';
 import { createSkyDome } from '../scene/sky-dome';
 import { tokenColor3 } from '../scene/token-colours';
 import type { InteractivePropId } from '../scene/world-actions';
@@ -101,9 +102,11 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
     cleanups.push(() => scene.dispose());
     const palette = createMaterialPalette(scene);
     const sky = createSkyDome(scene);
+    sky.mesh.setEnabled(false); // the painted backdrop replaces the plain gradient dome
+    const backdrop = createPaintedBackdrop(scene);
     const view = createDioramaCamera(scene, reducedMotion);
     const post = createPostProcessing(scene, view.camera);
-    cleanups.push(() => post.dispose(), () => sky.dispose(), () => palette.dispose());
+    cleanups.push(() => post.dispose(), () => sky.dispose(), () => backdrop.dispose(), () => palette.dispose());
 
     const diorama = await buildDiorama(scene, palette, signal, (done, total) => options.onProgress(0.4 + (done / total) * 0.45));
     cleanups.push(() => diorama.dispose());
@@ -112,7 +115,7 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
     cleanups.push(() => stage.dispose());
     checkAborted();
 
-    const lighting = createSceneLighting({ scene, palette, sky, post, shadowCasters: [...diorama.shadowCasters, ...stage.shadowCasters], reducedMotion }, options.initialPreset);
+    const lighting = createSceneLighting({ scene, palette, sky, post, shadowCasters: [...diorama.shadowCasters, ...stage.shadowCasters], reducedMotion, backdrop }, options.initialPreset);
     cleanups.push(() => lighting.dispose());
     const highlight = new HighlightLayer('hover-glow', scene, { blurHorizontalSize: 0.8, blurVerticalSize: 0.8 });
     highlight.innerGlow = false;

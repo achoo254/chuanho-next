@@ -107,7 +107,17 @@
      so the scene's light and materials stay in this one file too.
      --------------------------------------------------------------- */
 
-  /* time of day: sunset (default), lantern night, misty morning */
+  /* time of day: daylight (default), sunset, lantern night, misty morning. `backdrop` tints the painted sky. */
+  --c-scene-day-sky-top: #62b6f2;
+  --c-scene-day-sky-horizon: #e2f3ff;
+  --c-scene-day-backdrop: #ffffff;
+  --c-scene-day-fog: #dff0e4;
+  --c-scene-day-hemi-sky: #ffffff;
+  --c-scene-day-hemi-ground: #c4e6a8;
+  --c-scene-day-sun: #fff3d4;
+  --c-scene-sunset-backdrop: #ffc9a0;
+  --c-scene-night-backdrop: #4a3d86;
+  --c-scene-morning-backdrop: #f2f4ff;
   --c-scene-sunset-sky-top: #4b2a73;
   --c-scene-sunset-sky-horizon: #f2a65e;
   --c-scene-sunset-fog: #b9788a;
@@ -128,7 +138,7 @@
   --c-scene-morning-sun: #fff1d6;
 
   /* placeholder kit materials: soft vinyl pastels */
-  --c-scene-plinth: #6e4f7a;
+  --c-scene-plinth: #d8bf96;
   --c-scene-stone: #d9cbb9;
   --c-scene-stone-dark: #b3a391;
   --c-scene-roof: #c4664a;
@@ -142,6 +152,9 @@
   --c-scene-ink: #2b1747;
   --c-scene-mo: #8a4b2e;
   --c-scene-book: #e9c46a;
+
+  /* the veil over the 3D scene before the player taps Start: light, so the bright scene shows through */
+  --c-start-veil: rgb(255 255 255 / 0.12);
 
   /* 3D play: the mallet, the lotus stand, dust and smoke puffs, glowing note orbs */
   --c-scene-mallet-head: #f6ecd9;

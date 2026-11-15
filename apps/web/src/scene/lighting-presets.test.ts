@@ -45,12 +45,21 @@ describe('lighting presets', () => {
     expect(LIGHTING_PRESETS.sunset.lanternGlow).toBeGreaterThan(LIGHTING_PRESETS.mistyMorning.lanternGlow);
   });
 
-  it('cycle through every look and back to sunset', () => {
+  it('cycle through every look and back to daylight', () => {
+    expect(nextLightingPreset('daylight')).toBe('sunset');
     expect(nextLightingPreset('sunset')).toBe('lanternNight');
     expect(nextLightingPreset('lanternNight')).toBe('mistyMorning');
-    expect(nextLightingPreset('mistyMorning')).toBe('sunset');
+    expect(nextLightingPreset('mistyMorning')).toBe('daylight');
     expect(isLightingPresetId('lanternNight')).toBe(true);
     expect(isLightingPresetId('noon')).toBe(false);
+  });
+
+  it('tints the backdrop and keeps daylight brighter than sunset', () => {
+    const day = resolveLighting(LIGHTING_PRESETS.daylight, tokenColour);
+    const sunset = resolveLighting(LIGHTING_PRESETS.sunset, tokenColour);
+    expect(blendLighting(day, sunset, 0).backdropTint).toEqual(day.backdropTint);
+    expect(LIGHTING_PRESETS.daylight.exposure).toBeGreaterThan(LIGHTING_PRESETS.sunset.exposure);
+    expect(LIGHTING_PRESETS.daylight.vignetteWeight).toBeLessThan(LIGHTING_PRESETS.sunset.vignetteWeight);
   });
 
   it('ease in and out smoothly between 0 and 1', () => {
