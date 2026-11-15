@@ -15,7 +15,7 @@ import { Scene } from '@babylonjs/core/scene';
 import type { QualityLevel } from '../engine/quality-levels';
 import { LIGHTING_PRESETS, type LightingPresetId, type ResolvedLighting, blendLighting, easeInOut, resolveLighting } from './lighting-presets';
 import type { MaterialPalette } from './placeholder-materials';
-import type { PaintedBackdrop } from './painted-backdrop';
+import type { GardenBackdrop } from './backdrop-garden';
 import type { PostProcessing } from './post-processing';
 import type { SkyDome } from './sky-dome';
 import { rgbToColor3, rgbToLinearColor3, tokenRgb } from './token-colours';
@@ -40,7 +40,7 @@ interface Parts {
   readonly scene: Scene;
   readonly palette: MaterialPalette;
   readonly sky: SkyDome;
-  readonly backdrop: PaintedBackdrop;
+  readonly backdrop: GardenBackdrop;
   readonly post: PostProcessing;
   readonly shadowCasters: readonly AbstractMesh[];
   readonly reducedMotion: boolean;

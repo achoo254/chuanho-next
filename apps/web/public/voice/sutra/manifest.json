@@ -1,0 +1,147 @@
+{
+  "voice": "VieNeu-TTS v3 Turbo, built-in voice \"Thiền Tâm Đức\"",
+  "clips": [
+    {
+      "key": "line-01",
+      "file": "line-01.mp3",
+      "text": "Quán Tự Tại Bồ Tát.",
+      "seconds": 2.187,
+      "speech": 1.837,
+      "asr": 1.0,
+      "peakDb": -2.4
+    },
+    {
+      "key": "line-02",
+      "file": "line-02.mp3",
+      "text": "Hành thâm Bát Nhã Ba La Mật Đa thời.",
+      "seconds": 3.424,
+      "speech": 3.074,
+      "asr": 0.889,
+      "peakDb": -2.4
+    },
+    {
+      "key": "line-03",
+      "file": "line-03.mp3",
+      "text": "Chiếu kiến ngũ uẩn giai không.",
+      "seconds": 2.47,
+      "speech": 2.12,
+      "asr": 0.667,
+      "peakDb": -3.4
+    },
+    {
+      "key": "line-04",
+      "file": "line-04.mp3",
+      "text": "Độ nhất thiết khổ ách.",
+      "seconds": 2.069,
+      "speech": 1.719,
+      "asr": 1.0,
+      "peakDb": -2.4
+    },
+    {
+      "key": "line-05",
+      "file": "line-05.mp3",
+      "text": "Xá Lợi Tử.",
+      "seconds": 1.72,
+      "speech": 1.37,
+      "asr": 1.0,
+      "peakDb": -2.9
+    },
+    {
+      "key": "line-06",
+      "file": "line-06.mp3",
+      "text": "Sắc bất dị không.",
+      "seconds": 1.908,
+      "speech": 1.557,
+      "asr": 1.0,
+      "peakDb": -2.4
+    },
+    {
+      "key": "line-07",
+      "file": "line-07.mp3",
+      "text": "Không bất dị sắc.",
+      "seconds": 1.681,
+      "speech": 1.331,
+      "asr": 1.0,
+      "peakDb": -2.4
+    },
+    {
+      "key": "line-08",
+      "file": "line-08.mp3",
+      "text": "Sắc tức thị không.",
+      "seconds": 1.836,
+      "speech": 1.486,
+      "asr": 0.75,
+      "peakDb": -2.5
+    },
+    {
+      "key": "line-09",
+      "file": "line-09.mp3",
+      "text": "Không tức thị sắc.",
+      "seconds": 1.715,
+      "speech": 1.365,
+      "asr": 1.0,
+      "peakDb": -2.4
+    },
+    {
+      "key": "line-10",
+      "file": "line-10.mp3",
+      "text": "Thọ tưởng hành thức.",
+      "seconds": 1.783,
+      "speech": 1.433,
+      "asr": 1.0,
+      "peakDb": -2.5
+    },
+    {
+      "key": "line-11",
+      "file": "line-11.mp3",
+      "text": "Diệc phục như thị.",
+      "seconds": 2.164,
+      "speech": 1.814,
+      "asr": 0.75,
+      "peakDb": -2.4
+    },
+    {
+      "key": "nam-mo-1",
+      "file": "nam-mo-1.mp3",
+      "text": "Nam mô A Di Đà Phật.",
+      "seconds": 2.472,
+      "speech": 2.122,
+      "asr": 1.0,
+      "peakDb": -2.5
+    },
+    {
+      "key": "nam-mo-2",
+      "file": "nam-mo-2.mp3",
+      "text": "Nam mô A Di Đà Phật.",
+      "seconds": 2.404,
+      "speech": 2.054,
+      "asr": 1.0,
+      "peakDb": -2.4
+    },
+    {
+      "key": "nam-mo-3",
+      "file": "nam-mo-3.mp3",
+      "text": "Nam mô A Di Đà Phật.",
+      "seconds": 2.43,
+      "speech": 2.08,
+      "asr": 1.0,
+      "peakDb": -2.4
+    }
+  ],
+  "lines": [
+    "line-01",
+    "line-02",
+    "line-03",
+    "line-04",
+    "line-05",
+    "line-06",
+    "line-07",
+    "line-08",
+    "line-09",
+    "line-10",
+    "line-11",
+    "nam-mo-1",
+    "nam-mo-2",
+    "nam-mo-3"
+  ]
+}

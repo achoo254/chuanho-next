@@ -127,7 +127,67 @@ export const DIORAMA_LAYOUT: readonly PropPlacement[] = [
 ];
 
 /** Where the character stands: beside the wooden fish, turned a little towards it, facing the camera. */
-export const CHARACTER_SPOT = { position: [-0.22, 0, -2.95] as const, rotationY: -0.3 };
+export const CHARACTER_SPOT = { position: [-0.22, 0, -2.95] as const, rotationY: -0.3 } as const;
+
+/**
+ * Where the character goes by itself while nobody is playing (see `src/autonomy`). Each spot is a floor point and the
+ * way it faces there (yaw 0 faces the camera). `mo` is the play spot above; the others stand clear of the props by
+ * the character's own width.
+ */
+export const CHARACTER_SPOTS = {
+  mo: CHARACTER_SPOT,
+  /** Beside the incense burner, turned towards it and a little to the camera, so the bow reads in profile. */
+  pray: { position: [-1.4, 0, 0.1] as const, rotationY: -1.23 },
+  /** Open floor in front of the lotus, reading from a little book, turned a little towards the sutra stand. */
+  chant: { position: [-0.65, 0, -1.75] as const, rotationY: 0.3 },
+  /** A cushion on open floor right of the wooden fish, facing the camera and turned a little to the middle. */
+  meditate: { position: [2.15, 0, -2.45] as const, rotationY: 0.25 },
+  /** Left of the small bell, facing it. */
+  bell: { position: [1.8, 0, -0.45] as const, rotationY: -1.19 },
+  /** A sunny corner by the singing bowl to sit and doze. */
+  rest: { position: [3.55, 0, -3.45] as const, rotationY: 0.29 },
+} as const;
+export type CharacterSpotId = keyof typeof CHARACTER_SPOTS;
+
+/** Open floor where the character strolls to look around or wave. */
+export const YARD_WANDER_POINTS: readonly (readonly [number, number])[] = [
+  [0.2, -1.4],
+  [-0.7, -4.6],
+  [1.15, -1.95],
+  [-1.35, -4.05],
+  [1.1, -5.0],
+];
+
+/** Extra corners a walk may pass through to get around the props. */
+export const YARD_WAYPOINTS: readonly (readonly [number, number])[] = [
+  [-1.0, -0.65],
+  [1.05, -0.55],
+  [0.0, -1.7],
+  [-2.55, -2.25],
+  [1.6, -4.3],
+  [0.15, -4.5],
+  [2.5, -3.55],
+  [-4.4, -1.0],
+  [-2.2, 0.5],
+  [-0.9, -3.9],
+];
+
+/** Round footprint of the props the walks steer around (the meditation cushion is added by the character). */
+export const YARD_OBSTACLE_RADII: Readonly<Partial<Record<PropAssetId, number>>> = {
+  censer: 0.75,
+  sutraShelf: 0.75,
+  bell: 0.5,
+  bowl: 0.55,
+  woodenBoard: 0.8,
+  mo: 0.55,
+  lantern: 0.4,
+  lotusStand: 0.45,
+  bodhiTree: 0.55,
+  pillar: 0.35,
+};
+
+/** The paved floor the walks stay on (the hall's platform starts behind it). */
+export const YARD_WALK_BOUNDS = { minX: -5.4, maxX: 5.4, minZ: -5.4, maxZ: 1.3 } as const;
 
 /** The point the camera frames and the yard's size around it. */
 export const CAMERA_TARGET: Vec3 = { x: 0, y: 1.5, z: 0.6 };

@@ -1,48 +1,43 @@
 /**
  * One WebAudio context for the whole app: created and resumed inside the Start tap (mobile browsers, iOS above all,
- * only play audio after a user gesture), short samples decoded into buffers for instant playback, and the clock the
- * rhythm mode judges taps against.
+ * only play audio after a user gesture), short samples decoded into buffers for instant playback, the two media
+ * decks the music library streams through (music-decks.ts), and the clock the rhythm mode judges taps against.
  *
  * Every failure degrades to silence or a synthesized fallback, never to a broken screen.
  */
+import { type MusicDeck, createMusicDecks } from './music-decks';
+import { pickTakeIndex, takeUrls, takeVariation } from './sample-takes';
 
-export const SAMPLES = {
-  mo: '/audio/mo-hit.wav',
-  mo2: '/audio/mo-hit-2.wav',
-  mo3: '/audio/mo-hit-3.wav',
-  mo4: '/audio/mo-hit-4.wav',
-  bell: '/audio/bell.mp3',
-  bowl: '/audio/bowl.mp3',
+/** Each effect is a group of AI-made takes (see public/audio/CREDITS.md); a strike plays one of them. */
+export const SOUND_GROUPS = {
+  mo: takeUrls('mo', 14, 'wav'),
+  bell: takeUrls('bell', 7, 'mp3'),
+  bowl: takeUrls('bowl', 5, 'mp3'),
+  chime: takeUrls('chime', 3, 'mp3'),
+} as const;
+export type SampleName = keyof typeof SOUND_GROUPS;
+
+/** Loops of the rhythm mode's backing track (and the music fallback), by URL. */
+export const LOOPS = {
   pad: '/audio/pad-loop.mp3',
   pulse: '/audio/pulse.wav',
 } as const;
-export type SampleName = keyof typeof SAMPLES;
-
-/** The wooden fish is recorded in four takes with slightly different pitch; each strike plays one of them. */
-const MO_TAKES: readonly SampleName[] = ['mo', 'mo2', 'mo3', 'mo4'];
-let lastMoTake = -1;
-
-function pickMoTake(buffers: ReadonlyMap<SampleName, AudioBuffer>): SampleName | null {
-  const loaded = MO_TAKES.filter((take) => buffers.has(take));
-  if (loaded.length === 0) return null;
-  // Never the same take twice in a row, so a run of strikes does not sound like a machine.
-  let index = Math.floor(Math.random() * loaded.length);
-  if (loaded.length > 1 && index === lastMoTake) index = (index + 1) % loaded.length;
-  lastMoTake = index;
-  return loaded[index] ?? null;
-}
 
 interface Engine {
   readonly ctx: AudioContext;
-  /** Sound effects (wooden bell, bell, bowl). */
+  /** Sound effects (wooden fish, bell, bowl, chime). */
   readonly sfx: GainNode;
-  /** Music (the AI-made pad and pulse), kept below the effects. */
+  /** Music (the library, or the pad and pulse), kept below the effects. */
   readonly music: GainNode;
-  readonly buffers: Map<SampleName, AudioBuffer>;
+  /** Decoded samples by URL. */
+  readonly buffers: Map<string, AudioBuffer>;
+  /** The music library's two media decks, or null where media elements cannot feed WebAudio. */
+  readonly musicDecks: readonly [MusicDeck, MusicDeck] | null;
 }
 
 let engine: Engine | null = null;
 let loading: Promise<void> | null = null;
+const lastTake = new Map<SampleName, number>();
 
 type WindowWithLegacyAudio = Window & { webkitAudioContext?: typeof AudioContext };
 
@@ -57,13 +52,13 @@ function createContext(): AudioContext | null {
   }
 }
 
-async function loadSample(ctx: AudioContext, name: SampleName): Promise<[SampleName, AudioBuffer] | null> {
+async function loadSample(ctx: AudioContext, url: string): Promise<[string, AudioBuffer] | null> {
   try {
-    const response = await fetch(SAMPLES[name]);
+    const response = await fetch(url);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return [name, await ctx.decodeAudioData(await response.arrayBuffer())];
+    return [url, await ctx.decodeAudioData(await response.arrayBuffer())];
   } catch (error) {
-    console.warn(`Sample ${name} unavailable, using fallback`, error);
+    console.warn(`Sample ${url} unavailable, using fallback`, error);
     return null;
   }
 }
@@ -82,7 +77,7 @@ export function unlockAudio(): void {
     const music = ctx.createGain();
     music.gain.value = 0.55;
     music.connect(ctx.destination);
-    engine = { ctx, sfx, music, buffers: new Map() };
+    engine = { ctx, sfx, music, buffers: new Map(), musicDecks: createMusicDecks(ctx, music) };
     // A one-sample silent buffer started in the gesture is what finally unmutes iOS Safari.
     const silent = ctx.createBufferSource();
     silent.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
@@ -91,7 +86,8 @@ export function unlockAudio(): void {
   }
   const { ctx, buffers } = engine;
   if (ctx.state === 'suspended') ctx.resume().catch((error: unknown) => console.warn('AudioContext resume failed', error));
-  loading ??= Promise.all((Object.keys(SAMPLES) as SampleName[]).map((name) => loadSample(ctx, name))).then((loaded) => {
+  const urls = [...Object.values(SOUND_GROUPS).flat(), ...Object.values(LOOPS)];
+  loading ??= Promise.all(urls.map((url) => loadSample(ctx, url))).then((loaded) => {
     for (const entry of loaded) if (entry) buffers.set(entry[0], entry[1]);
   });
 }
@@ -101,7 +97,7 @@ export function audioEngine(): Engine | null {
   return engine;
 }
 
-/** A dry wooden "tok" synthesized on the spot, for when the wooden bell sample did not load. */
+/** A dry wooden "tok" synthesized on the spot, for when no wooden fish take loaded. */
 function synthWoodblock(e: Engine, when: number, gain: number): void {
   const osc = e.ctx.createOscillator();
   const env = e.ctx.createGain();
@@ -115,22 +111,28 @@ function synthWoodblock(e: Engine, when: number, gain: number): void {
   osc.stop(when + 0.14);
 }
 
-/** Plays a sample now (or at context time `when`). Missing samples are silent, except the wooden bell which is synthesized. */
+/**
+ * Plays one take of a sound group now (or at context time `when`): a random take, never the previous one, with a
+ * slight random pitch and level. Missing samples are silent, except the wooden fish, which is synthesized.
+ */
 export function playSample(name: SampleName, options: { gain?: number; when?: number } = {}): void {
   const e = engine;
   if (!e) return;
   const when = options.when ?? e.ctx.currentTime;
   const gain = options.gain ?? 1;
-  const take = name === 'mo' ? pickMoTake(e.buffers) : name;
-  const buffer = take ? e.buffers.get(take) : undefined;
-  if (!buffer) {
+  const loaded = SOUND_GROUPS[name].map((url) => e.buffers.get(url)).filter((b): b is AudioBuffer => b !== undefined);
+  if (loaded.length === 0) {
     if (name === 'mo') synthWoodblock(e, when, gain);
     return;
   }
+  const index = pickTakeIndex(loaded.length, lastTake.get(name) ?? -1);
+  lastTake.set(name, index);
+  const variation = takeVariation();
   const source = e.ctx.createBufferSource();
-  source.buffer = buffer;
+  source.buffer = loaded[index] ?? null;
+  source.playbackRate.value = variation.rate;
   const level = e.ctx.createGain();
-  level.gain.value = gain;
+  level.gain.value = gain * variation.gain;
   source.connect(level).connect(e.sfx);
   source.start(when);
 }

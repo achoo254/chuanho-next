@@ -18,6 +18,7 @@ const vi = {
   paper: 'Lời kinh',
   capturing: 'Đang chụp sân chùa…',
   wordsLeft: '{n}/{total}',
+  voiceUnavailable: 'Giọng đọc chưa tải được, gõ mõ để đọc từng chữ',
 } as const;
 
 export type PlayKey = keyof typeof vi;
@@ -35,6 +36,7 @@ const en: Record<PlayKey, string> = {
   paper: 'Sutra text',
   capturing: 'Taking a picture of the yard…',
   wordsLeft: '{n}/{total}',
+  voiceUnavailable: 'Voice could not load, strike to read word by word',
 };
 
 export type PlayText = (key: PlayKey, vars?: Record<string, string | number>) => string;

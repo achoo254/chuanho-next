@@ -40,7 +40,7 @@ export const LIGHTING_PRESETS: Readonly<Record<LightingPresetId, LightingPreset>
     skyHorizon: '--c-scene-day-sky-horizon',
     backdropTint: '--c-scene-day-backdrop',
     fog: '--c-scene-day-fog',
-    fogDensity: 0.008,
+    fogDensity: 0.004,
     hemiSky: '--c-scene-day-hemi-sky',
     hemiGround: '--c-scene-day-hemi-ground',
     hemiIntensity: 1.05,

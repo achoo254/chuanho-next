@@ -17,7 +17,7 @@ import type { LightingPresetId } from '../scene/lighting-presets';
 import { createMaterialPalette } from '../scene/placeholder-materials';
 import { createPostProcessing } from '../scene/post-processing';
 import { createSceneLighting } from '../scene/scene-lighting';
-import { createPaintedBackdrop } from '../scene/painted-backdrop';
+import { createGardenBackdrop } from '../scene/backdrop-garden';
 import { createSkyDome } from '../scene/sky-dome';
 import { tokenColor3 } from '../scene/token-colours';
 import type { InteractivePropId } from '../scene/world-actions';
@@ -102,8 +102,8 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
     cleanups.push(() => scene.dispose());
     const palette = createMaterialPalette(scene);
     const sky = createSkyDome(scene);
-    sky.mesh.setEnabled(false); // the painted backdrop replaces the plain gradient dome
-    const backdrop = createPaintedBackdrop(scene);
+    sky.mesh.setEnabled(false); // the camera looks down on the garden and never sees the sky
+    const backdrop = createGardenBackdrop(scene, reducedMotion);
     const view = createDioramaCamera(scene, reducedMotion);
     const post = createPostProcessing(scene, view.camera);
     cleanups.push(() => post.dispose(), () => sky.dispose(), () => backdrop.dispose(), () => palette.dispose());
@@ -111,7 +111,18 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
     const diorama = await buildDiorama(scene, palette, signal, (done, total) => options.onProgress(0.4 + (done / total) * 0.45));
     cleanups.push(() => diorama.dispose());
     checkAborted();
-    const stage = await createPlayStage({ scene, engine, view, focusAt: (distance) => post.focusAt(distance), diorama, palette, reducedMotion, signal });
+    const pulse = createPropPulse(diorama.props);
+    const stage = await createPlayStage({
+      scene,
+      engine,
+      view,
+      focusAt: (distance) => post.focusAt(distance),
+      diorama,
+      palette,
+      reducedMotion,
+      signal,
+      pulseProp: (prop) => pulse.start(prop),
+    });
     cleanups.push(() => stage.dispose());
     checkAborted();
 
@@ -133,10 +144,10 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
       onHover: options.onHover,
     });
     cleanups.push(() => picking.dispose());
-    const pulse = createPropPulse(diorama.props);
     const startLevel = options.pinnedQuality ?? startingQualityLevel(options.coarsePointer);
     const scaler = createQualityScaler(engine, startLevel, options.pinnedQuality !== null, (level) => {
       lighting.applyQuality(level);
+      backdrop.applyQuality(level);
       post.applyQuality(level);
       canvas.dataset.quality = level.id;
     });

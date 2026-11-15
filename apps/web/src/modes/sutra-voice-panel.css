@@ -1,0 +1,63 @@
+/* Chanting text: a small lower-third strip above the mode bar, so the scene stays in view. */
+
+.sutra-panel {
+  position: absolute;
+  bottom: calc(max(var(--space-3), env(safe-area-inset-bottom, 0px)) + var(--tap) + var(--space-4));
+  left: 50%;
+  width: min(560px, calc(100vw - 2 * var(--space-4)));
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid var(--c-paper-edge);
+  border-radius: var(--radius-md);
+  background: var(--c-paper);
+  color: var(--c-paper-ink);
+  box-shadow: 0 10px 28px var(--c-drop-shadow);
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.sutra-panel-line {
+  margin: 0;
+  font-size: clamp(20px, 2.4vw, 26px);
+  line-height: 1.4;
+  animation: sutra-line-in var(--dur-base) var(--ease-standard);
+}
+
+.sutra-panel-next {
+  margin: var(--space-1) 0 0;
+  color: var(--c-paper-ink-dim);
+  font-size: clamp(14px, 1.6vw, 16px);
+  line-height: 1.4;
+}
+
+.sutra-word {
+  color: var(--c-paper-ink-dim);
+  transition: color var(--dur-base) var(--ease-standard);
+}
+.sutra-word.is-lit {
+  color: var(--c-paper-ink);
+  font-weight: 600;
+}
+.sutra-word.is-current {
+  color: var(--c-paper-lit);
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+@keyframes sutra-line-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sutra-panel-line {
+    animation: none;
+  }
+  .sutra-word {
+    transition: none;
+  }
+}

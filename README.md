@@ -19,7 +19,9 @@ làm đăng nhập và đồng bộ), nên dev chỉ chạy web và chưa có pr
 |---|---|
 | [`apps/web`](apps/web) | `@chuanho/web`: React 19 + Vite, giao diện và ngôn ngữ dùng chung từ `@achoo254/app-shell` |
 | [`apps/web/public/art`](apps/web/public/art) | Ảnh sân chùa, mascot, 4 khung hoạt ảnh gõ mõ, skin mõ (đã nén, webp) |
-| [`apps/web/public/audio`](apps/web/public/audio) | Tiếng mõ, chuông, bát (nhạc nền Mõ Beat tổng hợp trong code) |
+| [`apps/web/public/audio`](apps/web/public/audio) | Tiếng mõ (14 take), chuông/chiêng, bát, chuông nhỏ do AI tạo; vòng nhạc dự phòng và nhịp của Mõ Beat |
+| [`apps/web/public/voice/sutra`](apps/web/public/voice/sutra) | Giọng AI đọc kinh (VieNeu-TTS, offline), mỗi dòng một MP3, `manifest.json` ghi độ dài từng dòng |
+| [`apps/web/src/audio`](apps/web/src/audio) | WebAudio: hiệu ứng nhiều take (ngẫu nhiên, không lặp liền, lệch cao độ nhẹ), trình phát thư viện nhạc nền (xáo, không trùng trong 4 giờ nghe, chuyển bài mượt) |
 | [`brand`](brand) | Biểu tượng app (bản vẽ tay tạm, thay bằng bản AI sau) |
 | [`apps/web/src/game`](apps/web/src/game) | Logic thuần có test: chấm nhịp, sinh nốt theo độ khó, một phiên một ngày, nhiệm vụ theo ngày |
 | [`scripts`](scripts) | `check-tokens`: kiểm màu chỉ nằm ở `tokens.css` và đủ tương phản WCAG AA |
@@ -75,10 +77,19 @@ gõ cho vui), 1 đến 3 vào thắp hương, Mõ Beat, tụng kinh, Esc về s�
   lúc chạm. Chạm liên tục thì cú gõ bắt đầu lại, không xếp hàng.
 - **Thắp hương:** giữ ngón tay hoặc chuột trên lư hương (hoặc giữ Space trên nút giữ), nén hương cháy dần, đầu than sáng, khói
   bay; xong thì thẻ nhỏ mời sang bước kế của phiên.
-- **Mõ Beat:** cùng bộ sinh nốt, chấm nhịp và nhạc tổng hợp như bản 2D; nốt là quả cầu sáng bay theo đường cong tới đỉnh mõ,
-  chạm ở đâu trên màn hình cũng là gõ.
-- **Tụng kinh:** camera hạ về phía giá kinh, lời kinh trên tờ giấy nổi, mỗi tiếng mõ sáng một chữ.
+- **Mõ Beat:** cùng bộ sinh nốt, chấm nhịp và nhạc tổng hợp như bản 2D; nốt là hoa sen (đèn lồng ở phách đầu ô nhịp) do AI vẽ,
+  kéo đuôi lấp lánh bay theo đường cong vào vòng hào quang sau đỉnh mõ, chạm ở đâu trên màn hình cũng là gõ. Vòng hào
+  quang và mép màn hình sáng nhẹ theo nhịp, một vòng thu dần báo lúc gõ; gõ trúng thì bung cánh sen và sao, chữ PERFECT,
+  GOOD hiện trên hình AI; combo nằm trong khung cánh sen. Hình và nguồn: [`public/art/beat`](apps/web/public/art/beat/CREDITS.md).
+- **Tụng kinh:** camera hạ về phía giá kinh; giọng AI đọc chậm từng dòng (nhạc nền tự hạ khi giọng đọc), dải chữ nhỏ
+  ở dưới màn hình chỉ hiện dòng đang đọc (chữ đỏ chạy theo giọng) và dòng kế. Tắt giọng, tắt tiếng hoặc giọng không tải
+  được thì mỗi tiếng mõ sáng một chữ như cũ. Giọng nằm ở `apps/web/public/voice/sutra` (nguồn và cách tạo ở `CREDITS.md`
+  cạnh đó), chỉ tải khi vào chế độ này.
 - **Mõ vô cực:** gõ tự do, "+1", gõ tự động, nền lofi, skin mõ đổi chất liệu của chính quả mõ.
+- **Nhạc nền (nền lofi ở Mõ vô cực và Tụng kinh):** thư viện khoảng 4 giờ nhạc không lời phong cách Trung Hoa (sáo trúc,
+  đàn tranh, chuông, bát) do AI tạo, phát xáo trộn và không lặp bài nào trong 4 giờ nghe (nhớ cả khi tải lại trang), mỗi bài
+  chuyển sang bài sau trong 4 giây. Thư viện nằm trên máy chủ ở `/media/music/` (xem `docs/deployment-guide.md`); không
+  tải được thì phát vòng nhạc có sẵn. Tắt tiếng trên HUD thì nhạc dừng và chạy tiếp khi bật lại; tab ẩn vẫn phát.
 - **Kết phiên và chia sẻ:** thẻ kết quả, nhiệm vụ nhỏ trong ngày; đồ trang trí mở bằng công đức hiện thành vật trong sân;
   thẻ chia sẻ là ảnh chụp từ cảnh 3D kèm chỉ số tích cực.
 
@@ -92,7 +103,7 @@ Mô hình: khi có `apps/web/public/models/<tên>.glb` (tên ở `PROP_ASSET_FIL
 [`diorama-layout.ts`](apps/web/src/scene/diorama-layout.ts)), mô hình thay khối dựng bằng code, được xoay và co theo
 `PROP_MODEL_FITS` cho khớp chiều cao khối nó thay. Hiện dùng mô hình AI cho mõ, dùi, bát, chuông và cột son; các vật còn lại
 (chính điện, gác chuông, cây bồ đề, đèn lồng, lư hương, giá kinh, đài sen) dựng bằng code kèm texture AI vì mô hình AI bị méo.
-Mặt nhân vật lấy từ `public/art/character/` khi có, thiếu thì tự vẽ bằng canvas.
+Nhân vật là chú tiểu chibi dựng bằng code; mắt, miệng và vải áo là ảnh WebP do AI vẽ trong `public/art/character/`. Chú tự đi lại trong sân (`apps/web/src/autonomy`), ngồi thiền, tụng kinh, gõ mõ, khấn vái, thỉnh chuông và nói qua bong bóng chat. Nền quanh bệ chùa là khu vườn 3D (`apps/web/src/scene/backdrop-*.ts`) với cỏ và nước vẽ bằng AI.
 
 ## Kế hoạch
 

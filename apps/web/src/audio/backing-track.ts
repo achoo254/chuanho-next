@@ -4,7 +4,7 @@
  * pulse is scheduled from the same BPM and start time as the note chart, so every note lands on a beat the player
  * can hear. Missing files degrade to silence (the game stays playable).
  */
-import { audioEngine } from './audio-engine';
+import { LOOPS, audioEngine } from './audio-engine';
 
 const BEATS_PER_BAR = 4;
 const LOOKAHEAD_S = 1.2;
@@ -43,7 +43,7 @@ export function startBackingTrack(options: BackingTrackOptions): BackingTrack {
     node.addEventListener('ended', () => sources.delete(node));
   };
 
-  const padBuffer = buffers.get('pad');
+  const padBuffer = buffers.get(LOOPS.pad);
   if (padBuffer) {
     const pad = ctx.createBufferSource();
     pad.buffer = padBuffer;
@@ -58,7 +58,7 @@ export function startBackingTrack(options: BackingTrackOptions): BackingTrack {
 
   /** A soft kick on beats 1 and 3, a quieter, higher tick on 2 and 4 (the same recording, played faster). */
   function pulse(at: number, strong: boolean): void {
-    const buffer = buffers.get('pulse');
+    const buffer = buffers.get(LOOPS.pulse);
     if (!buffer) return;
     const source = ctx.createBufferSource();
     source.buffer = buffer;

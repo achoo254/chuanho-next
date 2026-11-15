@@ -12,15 +12,18 @@ Runbook deploy của repo này. Quy tắc chung của hệ sinh thái (tên, IdP
 | Server API, database | Chưa có ở bản hiện tại (khách chơi hoàn toàn trên trình duyệt, tiến trình lưu trong máy) |
 | Đường vào | Cloudflare (proxied, SSL "full") → nginx `conf.d/chuanho.hoandat.com.conf` → file tĩnh |
 | Ảnh và âm thanh | `/art/…` và `/audio/…` nằm trong bản phát hành, cache một ngày |
+| Thư viện nhạc nền | `/var/www/chuanho/media/music/` (ngoài `dist/`, deploy không đụng tới), phục vụ ở `/media/music/` |
 
 Các file: [`infra/nginx/chuanho.hoandat.com.conf`](../infra/nginx/chuanho.hoandat.com.conf),
 [`infra/deploy.sh`](../infra/deploy.sh), [`infra/activate-incoming.sh`](../infra/activate-incoming.sh),
+[`infra/install-nginx-conf.sh`](../infra/install-nginx-conf.sh), [`infra/upload-music.sh`](../infra/upload-music.sh),
 [`infra/setup-deploy-user.sh`](../infra/setup-deploy-user.sh), [`.github/workflows/ci.yml`](../.github/workflows/ci.yml),
 [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml).
 
 Chính sách nội dung trang (CSP) trong nginx cho phép: script và style của chính trang (React ghi style inline nên style
 có `'unsafe-inline'`), ảnh từ chính trang và `data:`/`blob:` (thẻ chia sẻ vẽ trên canvas rồi lưu thành blob), âm thanh từ
-chính trang và `blob:` (nhạc nền tổng hợp ngay trong trình duyệt), và tín hiệu Cloudflare Web Analytics. Cảm biến nghiêng
+chính trang và `blob:` (thư viện nhạc ở `/media/music/` cùng origin nên không phải mở thêm gì), và tín hiệu
+Cloudflare Web Analytics. Cảm biến nghiêng
 (`accelerometer`, `gyroscope`) được cấp cho chính trang để làm hiệu ứng chiều sâu; camera, micro, vị trí bị chặn.
 
 **Bản 3D (mặc định) và CSP.** Babylon.js không nạp gì từ CDN: mọi bộ giải nén nằm ở `/decoders/babylon/` trong bản phát
@@ -64,6 +67,35 @@ và thoát mã khác 0. Cuối cùng workflow kiểm từ ngoài: `https://chuan
 User `chuanho-deploy` chỉ ghi được `/var/www/chuanho/ci-incoming` và chạy đúng lệnh trên qua sudo; khoá trong
 `authorized_keys` có `restrict`. CI không đổi được nginx hay script root: những thứ đó chỉ đổi qua `infra/deploy.sh`
 chạy bằng root.
+
+## Thư viện nhạc nền (`/media/music/`)
+
+Nhạc nền là thư viện khoảng 4 giờ nhạc không lời do AI tạo (ACE-Step 1.5 trên PC, công cụ ở `tools/chuanho-music`
+của workspace `hoandat-app`), quá lớn cho repo và cho bản phát hành (CI rsync `dist/` mỗi lần push và thay hẳn nó). Thư
+viện nằm trên `.65` ở `/var/www/chuanho/media/music/` (`manifest.json` và các file `m###-<băm>.mp3`), ngoài `dist/`,
+nên deploy không xoá. Nginx (`location ^~ /media/music/`) trả `audio/mpeg` cache một năm `immutable` (tên file chứa mã
+băm nội dung) và hỗ trợ byte range (206) để trình duyệt stream và tua; `manifest.json` trả `application/json` với
+`Cache-Control: no-cache`. File không có trả 404 (không rơi về `index.html`).
+
+Tải lên hoặc cập nhật (chạy lại bao nhiêu lần cũng được, rsync chỉ gửi phần đổi):
+
+```sh
+SSH_TARGET=<alias> SSH_OPTS="-F <ssh_config>" bash infra/upload-music.sh <thư mục thư viện>
+# PRUNE=1 để xoá trên máy chủ các bản manifest mới không còn liệt kê
+```
+
+Script kiểm mọi file manifest nêu đều có và tên an toàn, kiểm chỗ trống trên máy chủ (dừng nếu còn dưới 3 lần kích thước
+thư viện), gửi các bản nhạc trước rồi `manifest.json` sau cùng (client không bao giờ thấy manifest nêu file chưa có), rồi
+cài file nginx bằng `infra/install-nginx-conf.sh` (giống `deploy.sh`: `nginx -t`, hỏng thì trả file cũ, không reload).
+Dung lượng: thư viện hiện tại khoảng 75 MB (MP3 mono 40 kbps); đĩa `.65` còn hàng chục GB. Kiểm sau khi tải:
+
+```sh
+curl -sI https://chuanho.hoandat.com/media/music/manifest.json      # 200, application/json, no-cache
+curl -s -o /dev/null -w '%{http_code} %{content_type}\n' -r 0-1023 https://chuanho.hoandat.com/media/music/<file>.mp3   # 206 audio/mpeg
+```
+
+Thiếu thư viện (máy chủ mới, mất mạng, chạy `pnpm dev`) thì game tự phát vòng nhạc `pad-loop.mp3` có sẵn trong bản phát
+hành. Build có thể trỏ nơi khác bằng `VITE_MUSIC_BASE` (kết thúc bằng `/`).
 
 ## Quay lui
 

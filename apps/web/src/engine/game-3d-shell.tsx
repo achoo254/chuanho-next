@@ -5,10 +5,12 @@
  */
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { audioEngine, playSample, unlockAudio } from '../audio/audio-engine';
+import { useLofiBackdrop } from '../screens/use-lofi-backdrop';
 import { brand } from '../brand';
 import { NoWebglFallback } from '../fallback/no-webgl-fallback';
 import { useGameSession } from '../game/game-session-context';
 import { ActionToast, type HoverHint, PropHoverHint, type ToastContent } from '../hud/action-toast';
+import { CharacterBubble } from '../hud/character-bubble';
 import { GameHud } from '../hud/game-hud';
 import '../hud/game-3d-hud.css';
 import { useHudText } from '../hud/hud-messages';
@@ -78,6 +80,8 @@ export function Game3dShell(): ReactNode {
       const route = routeActions(actions);
       // The wooden fish answers with the strike itself; other props bounce.
       if (prop && prop !== 'mo' && route.kind !== 'enter') world?.pulse(prop);
+      // The character looks over at whatever was tapped in the yard (opening a mode calls it over instead).
+      if (prop && route.kind !== 'enter') world?.stage.notice(prop);
       switch (route.kind) {
         case 'enter':
           open(route.mode);
@@ -183,6 +187,9 @@ export function Game3dShell(): ReactNode {
     setMuted(next);
   }, [muted]);
 
+  // The calm library music plays under the whole game (the modes that want it share the same session).
+  useLofiBackdrop(started && !muted);
+
   const start = useCallback((): void => {
     unlockAudio();
     void requestTiltPermission();
@@ -195,7 +202,7 @@ export function Game3dShell(): ReactNode {
 
   return (
     // Any first tap (also in a mode opened straight from the address) unlocks sound, as browsers require.
-    <div className="game3d" data-id="game3d" data-mode={mode} onPointerDownCapture={started ? unlockAudio : undefined}>
+    <div className="game3d" data-id="game3d" data-mode={mode} onPointerDownCapture={started && !muted ? unlockAudio : undefined}>
       <div ref={hostRef} className="game3d-stage" />
       {status === 'unsupported' && <NoWebglFallback />}
       {status === 'loading' && <LoadingScreen progress={loaded} />}
@@ -213,6 +220,7 @@ export function Game3dShell(): ReactNode {
               onInfo={() => setInfoOpen(true)}
             />
           )}
+          {started && <CharacterBubble stage={world.stage} visible={mode === 'yard' && !infoOpen} />}
           <ActionToast toast={toast} onChoose={(action) => runAction(action)} />
           <PropHoverHint hint={started && mode === 'yard' ? hint : null} />
           {!started && <StartOverlay onStart={start} />}

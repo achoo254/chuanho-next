@@ -1,15 +1,14 @@
-/** A looping, pulse-free lofi pad while `enabled` is true (chanting and endless mode backdrops). */
+/**
+ * Background music while `enabled` is true (chanting, endless mode, and any screen that wants the calm backdrop):
+ * the AI music library from the server, shuffled with no repeat within four hours of listening, or the bundled pad
+ * loop when the library cannot be reached. See audio/background-music.ts.
+ */
 import { useEffect } from 'react';
-import { audioEngine } from '../audio/audio-engine';
-import { startBackingTrack } from '../audio/backing-track';
-
-const BACKDROP_BPM = 68;
+import { acquireBackgroundMusic } from '../audio/background-music';
 
 export function useLofiBackdrop(enabled: boolean): void {
   useEffect(() => {
-    const engine = audioEngine();
-    if (!enabled || !engine) return;
-    const pad = startBackingTrack({ bpm: BACKDROP_BPM, startAt: engine.ctx.currentTime + 0.1, pulse: false });
-    return () => pad.stop();
+    if (!enabled) return;
+    return acquireBackgroundMusic();
   }, [enabled]);
 }

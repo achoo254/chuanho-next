@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BLINK_MS, BLINK_WINDOW_MS, DOZE_AFTER_MS, beatBounceAt, breathAt, isBlinkingAt, shouldDoze } from './idle-motion';
+import { BLINK_MS, BLINK_WINDOW_MS, beatBounceAt, breathAt, isBlinkingAt } from './idle-motion';
 
 describe('breathing', () => {
   it('stays small and stops with reduced motion', () => {
@@ -40,9 +40,10 @@ describe('beat bounce', () => {
   });
 });
 
-describe('dozing', () => {
-  it('nods off only after a long quiet spell', () => {
-    expect(shouldDoze(DOZE_AFTER_MS - 1)).toBe(false);
-    expect(shouldDoze(DOZE_AFTER_MS)).toBe(true);
+describe('slow breathing', () => {
+  it('follows the given depth and period', () => {
+    expect(breathAt(1300, false, 0.03, 5200)).toBeCloseTo(0.03, 6);
+    expect(breathAt(2600, false, 0.03, 5200)).toBeCloseTo(0, 6);
+    expect(breathAt(1300, false, 0.03, 0)).toBe(0);
   });
 });

@@ -154,7 +154,7 @@
   --c-scene-book: #e9c46a;
 
   /* the veil over the 3D scene before the player taps Start: light, so the bright scene shows through */
-  --c-start-veil: rgb(255 255 255 / 0.12);
+  --c-start-veil: rgb(255 255 255 / 0.05);
 
   /* 3D play: the mallet, the lotus stand, dust and smoke puffs, glowing note orbs */
   --c-scene-mallet-head: #f6ecd9;
@@ -164,12 +164,67 @@
   --c-scene-smoke: #e8e0f0;
   --c-scene-orb: #ffd27a;
 
+  /* the garden around the plinth: lawn tints (they multiply the grass texture), water banks, pebbles, lily pads,
+     bamboo, puffy trees, pink blossom, bushes, little flowers, far hills */
+  --c-scene-meadow-sunny: #fffbe3;
+  --c-scene-meadow-fresh: #f2fff0;
+  --c-scene-meadow-shade: #c4e0bc;
+  --c-scene-bank: #f3e3c2;
+  --c-scene-pebble: #ece8f2;
+  --c-scene-pebble-shade: #bdb6cc;
+  --c-scene-lily-pad: #86d46e;
+  --c-scene-lily-pad-deep: #4f9e4a;
+  --c-scene-bamboo: #a6da7e;
+  --c-scene-bamboo-node: #6aa94f;
+  --c-scene-bamboo-leaf: #82d063;
+  --c-scene-bamboo-leaf-deep: #4a9547;
+  --c-scene-canopy: #97e08c;
+  --c-scene-canopy-deep: #4aa866;
+  --c-scene-blossom: #ffc8dc;
+  --c-scene-blossom-deep: #ee8bb2;
+  --c-scene-bush: #74c76c;
+  --c-scene-bush-deep: #3f9655;
+  --c-scene-flower-white: #fffaf2;
+  --c-scene-flower-yellow: #ffd95a;
+  --c-scene-flower-pink: #ff9ec4;
+  --c-scene-flower-heart: #ffb83d;
+  --c-scene-hill: #b3e3a2;
+  --c-scene-hill-deep: #72c184;
+
   /* the floating sutra paper over the 3D scene (text checked by check:tokens) */
   --c-paper: #f8eedb;
   --c-paper-edge: #e6d3b0;
   --c-paper-ink: #3a2410;
   --c-paper-ink-dim: #6f5a45;
   --c-paper-lit: #9b2c1c;
+
+  /* Mõ Beat: note tint on a miss, the beat glow, cream game cards, judgement and combo lettering, battery */
+  --c-beat-miss-tint: #a3adbd;
+  --c-beat-note-glow: #ff8fc0;
+  --c-beat-sparkle: #ffe2a8;
+  --c-beat-pulse: rgb(255 214 140 / 0.42);
+  --c-beat-pulse-perfect: rgb(255 196 220 / 0.5);
+  --c-beat-card: rgb(255 250 242 / 0.95);
+  --c-beat-card-edge: #f6cbd8;
+  --c-beat-ink: #3a2410;
+  --c-beat-ink-soft: #6a5240;
+  --c-beat-accent: #b0325c;
+  --c-beat-tile: #fff1e6;
+  --c-beat-tile-selected: #ffe1ec;
+  --c-beat-selected-glow: rgb(255 176 92 / 0.7);
+  --c-beat-shadow: rgb(110 52 40 / 0.28);
+  --c-beat-perfect-top: #fff6c4;
+  --c-beat-perfect-bottom: #ffae3d;
+  --c-beat-perfect-stroke: #8a3d12;
+  --c-beat-good-top: #fff0f8;
+  --c-beat-good-bottom: #d4a6ff;
+  --c-beat-good-stroke: #5a2c8c;
+  --c-beat-miss-text: #f2f6fa;
+  --c-beat-miss-stroke: #4f6075;
+  --c-beat-chip: rgb(255 250 242 / 0.92);
+  --c-beat-battery-track: rgb(255 255 255 / 0.6);
+  --c-beat-battery-from: #ff9fc4;
+  --c-beat-battery-to: #ffcf6e;
 
   /* the 3D game HUD */
   --c-hud-panel: rgb(29 15 51 / 0.72);
@@ -190,4 +245,25 @@
     --dur-base: 1ms;
     --dur-pop: 1ms;
   }
+}
+
+/* ---------------------------------------------------------------
+   The 3D character (a little temple novice) and its speech bubble
+   --------------------------------------------------------------- */
+:root {
+  /* vinyl skin, saffron robe with a deeper collar and cuffs, slippers, the forelock, prayer beads, the cushion */
+  --c-scene-char-skin: #f5d5c3;
+  --c-scene-char-robe: #f4a95e;
+  --c-scene-char-robe-dark: #c86f3c;
+  --c-scene-char-shoe: #7a4632;
+  --c-scene-char-hair: #3d2a3a;
+  --c-scene-char-bead: #8c4f30;
+  --c-scene-char-cushion: #d0584c;
+  /* the soft contact shadow under the feet */
+  --c-scene-char-shadow: #3a2346;
+  /* the speech bubble over the scene: cream card, ink text (15:1), warm outline */
+  --c-bubble-bg: #fffaf2;
+  --c-bubble-ink: #2b1747;
+  --c-bubble-line: #ead2b6;
+  --c-bubble-shadow: rgb(43 23 71 / 0.22);
 }
