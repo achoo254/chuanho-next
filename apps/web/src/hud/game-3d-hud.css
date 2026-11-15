@@ -113,8 +113,17 @@
 
 .game3d-stats,
 .game3d-controls,
-.game3d-bar {
+.game3d-bar,
+.quiet-hour-chip {
   pointer-events: auto;
+}
+
+.game3d-hud-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .game3d-stats {
@@ -311,6 +320,80 @@
   margin: var(--space-4) 0 0;
   color: var(--c-text-muted);
   font-size: 13px;
+}
+
+/* ---------- account and "Giờ Tĩnh" ---------- */
+
+/* A link styled as an icon button (sign-in is a plain link: the CSP allows no form). */
+a.hud-btn {
+  text-decoration: none;
+}
+
+.account-chip {
+  background: var(--c-primary-solid);
+  color: var(--c-on-primary);
+  font-size: 18px;
+  font-weight: 800;
+}
+.account-chip:hover {
+  background: var(--c-primary-solid-hover);
+}
+
+.account-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 var(--tap) var(--space-2) 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--c-primary);
+  overflow-wrap: anywhere;
+}
+.account-line {
+  margin: 0 0 var(--space-2);
+  color: var(--c-text-muted);
+  font-size: 14px;
+}
+.account-notice {
+  color: var(--c-text);
+  font-weight: 600;
+}
+.account-actions,
+.account-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+.account-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.account-question {
+  flex-basis: 100%;
+  margin: 0;
+  font-weight: 600;
+}
+.account-hint {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+.account-danger {
+  border-color: var(--c-lotus-deep);
+}
+
+.quiet-hour-chip {
+  font-size: 13px;
+  font-weight: 700;
+}
+.quiet-hour-lanterns {
+  display: inline-flex;
+  gap: var(--space-1);
+  color: var(--c-primary);
 }
 
 /* ---------- no WebGL2 ---------- */

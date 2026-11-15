@@ -6,12 +6,14 @@ import {
   countByDay,
   isQuietHourNow,
   isRoomCode,
+  isRoomErrorCode,
   mergeJournal,
   mergeProgress,
   msUntilQuietHour,
   parseJournalEntry,
   parseQuietHourBeatsInput,
   parseRoomCreateInput,
+  parseRoomLockInput,
   parseSyncRequest,
   quietHourWindow,
   roomStatus,
@@ -95,6 +97,33 @@ describe('checkWish', () => {
     expect(checkWish('')).toEqual({ ok: false, reason: 'empty' });
     expect(checkWish('a'.repeat(81))).toEqual({ ok: false, reason: 'tooLong' });
   });
+
+  it('lets everyday words through whose folded form looks rude or like a link', () => {
+    for (const wish of [
+      'Mong buổi họp ngắn thôi',
+      'Cầu cho các deadline lùi lại',
+      'Được ngủ đủ giấc',
+      'Mong có người yêu',
+      'Deadline xong. Ngủ thôi',
+      'Lương lớn hơn tí',
+      'Còn chờ gì nữa',
+      'Cho dễ thở',
+      'Đeo tai nghe chill',
+      'Mẹ ơi con qua môn',
+    ]) {
+      expect(checkWish(wish)).toEqual({ ok: true, text: wish });
+    }
+  });
+
+  it('still blocks the accented rude forms and spelt-out links', () => {
+    expect(checkWish('đồ ngu')).toEqual({ ok: false, reason: 'rude' });
+    expect(checkWish('Đéo muốn đi làm')).toEqual({ ok: false, reason: 'rude' });
+    expect(checkWish('thằng chó')).toEqual({ ok: false, reason: 'rude' });
+    expect(checkWish('dit me deadline')).toEqual({ ok: false, reason: 'rude' });
+    expect(checkWish('vào abc chấm com')).toEqual({ ok: false, reason: 'link' });
+    expect(checkWish('zalo.me/123')).toEqual({ ok: false, reason: 'link' });
+    expect(checkWish('xem shop.abc.site')).toEqual({ ok: false, reason: 'link' });
+  });
 });
 
 describe('rooms', () => {
@@ -112,6 +141,19 @@ describe('rooms', () => {
     expect(roomStatus([{ stick: null }], 1e12)).toBe('open');
     expect(roomStatus([{ stick }, { stick: null }], 61 * 60_000)).toBe('ashes');
     expect(roomStatus([{ stick }], 10)).toBe('open');
+  });
+
+  it('reads the lock body, an empty one locking', () => {
+    expect(parseRoomLockInput(undefined)).toEqual({ locked: true });
+    expect(parseRoomLockInput({})).toEqual({ locked: true });
+    expect(parseRoomLockInput({ locked: false })).toEqual({ locked: false });
+    expect(parseRoomLockInput({ locked: 'no' })).toBeNull();
+    expect(parseRoomLockInput([])).toBeNull();
+  });
+
+  it('knows its error codes', () => {
+    expect(isRoomErrorCode('room-full')).toBe(true);
+    expect(isRoomErrorCode('internal')).toBe(false);
   });
 });
 

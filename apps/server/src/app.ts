@@ -11,6 +11,7 @@ import type { Db } from './db/client';
 import { HttpError } from './http-error';
 import { safeErrorText } from './log-error';
 import { quietHourRoutes } from './quiet-hour/quiet-hour-routes';
+import { roomRoutes } from './rooms/room-routes';
 import type { RouteDeps, RouteModule } from './route-module';
 import { syncRoutes } from './sync/sync-routes';
 
@@ -18,7 +19,7 @@ import { syncRoutes } from './sync/sync-routes';
  * Every feature's routes, mounted in this order behind the same-origin check. A new feature is one more entry here.
  * Each module reads its own JSON body (with its own size limit), so nothing parses a body before a route wants it.
  */
-const ROUTE_MODULES: readonly RouteModule[] = [authRoutes, accountRoutes, syncRoutes, quietHourRoutes];
+const ROUTE_MODULES: readonly RouteModule[] = [authRoutes, accountRoutes, syncRoutes, quietHourRoutes, roomRoutes];
 
 export interface AppDeps {
   config: ServerConfig;

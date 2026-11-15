@@ -4,7 +4,7 @@
  * session of the local day. Afterwards the steps reset so the player can go around again (for fun, no reward).
  */
 import { type ReactNode, createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { type PlayerProgress, addRestraint, completeFullSession, loadProgress, saveProgress } from './player-progress';
+import { type PlayerProgress, addRestraint, completeFullSession, loadProgress, saveProgress, stampPreferences } from './player-progress';
 import { localDateKey } from './session-day';
 
 export const SESSION_STEPS = ['incense', 'beat', 'sutra'] as const;
@@ -30,7 +30,10 @@ interface GameSession {
   recordCombo(combo: number): void;
   /** Counts one more held-back harsh word. */
   recordRestraint(): void;
+  /** A change made by the player here; a changed preference (skin, sounds) is stamped with the current time. */
   updateProgress(change: (current: PlayerProgress) => PlayerProgress): void;
+  /** Takes progress merged by account sync as is (no new preference stamp, so it does not bounce back). */
+  adoptProgress(change: (current: PlayerProgress) => PlayerProgress): void;
 }
 
 const GameSessionContext = createContext<GameSession | null>(null);
@@ -40,13 +43,18 @@ export function GameSessionProvider({ children }: { children: ReactNode }): Reac
   const [steps, setSteps] = useState<StepsDone>(NO_STEPS);
   const [lastResult, setLastResult] = useState<SessionResult | null>(null);
 
-  const updateProgress = useCallback((change: (current: PlayerProgress) => PlayerProgress): void => {
+  const adoptProgress = useCallback((change: (current: PlayerProgress) => PlayerProgress): void => {
     setProgress((current) => {
       const next = change(current);
       if (next !== current) saveProgress(next);
       return next;
     });
   }, []);
+
+  const updateProgress = useCallback(
+    (change: (current: PlayerProgress) => PlayerProgress): void => adoptProgress((current) => stampPreferences(current, change(current), Date.now())),
+    [adoptProgress],
+  );
 
   const completeStep = useCallback(
     (step: SessionStep): boolean => {
@@ -74,8 +82,8 @@ export function GameSessionProvider({ children }: { children: ReactNode }): Reac
   const recordRestraint = useCallback((): void => updateProgress(addRestraint), [updateProgress]);
 
   const value = useMemo<GameSession>(
-    () => ({ progress, steps, lastResult, restraintCount: progress.restraintCount, completeStep, recordCombo, recordRestraint, updateProgress }),
-    [progress, steps, lastResult, completeStep, recordCombo, recordRestraint, updateProgress],
+    () => ({ progress, steps, lastResult, restraintCount: progress.restraintCount, completeStep, recordCombo, recordRestraint, updateProgress, adoptProgress }),
+    [progress, steps, lastResult, completeStep, recordCombo, recordRestraint, updateProgress, adoptProgress],
   );
   return <GameSessionContext value={value}>{children}</GameSessionContext>;
 }

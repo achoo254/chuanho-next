@@ -1,7 +1,7 @@
 /**
  * Endless mõ in 3D: strike as much as you like (anywhere on screen, or Space), "+1" rises from the wooden fish, an
  * optional calm auto strike and lofi backdrop, and the wooden fish's skins unlocked by merit as before. Just for
- * fun: it earns no merit.
+ * fun: it earns no merit. The player's own strikes (not the auto ones) count toward the shared "Giờ Tĩnh" total.
  */
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { useGameSession } from '../game/game-session-context';
@@ -9,6 +9,7 @@ import { MO_SKINS, isUnlocked } from '../game/player-progress';
 import { HudIcon, IconButton } from '../hud/hud-icons';
 import { useI18n } from '../i18n/i18n';
 import { useLofiBackdrop } from '../audio/use-lofi-backdrop';
+import { useQuietHourStrokes } from '../quiet-hour/quiet-hour-provider';
 import { useFloatingText } from '../ui/floating-text';
 import { ModeBar, MoFloatAnchor, type PlayModeProps, StrikeTapLayer, useRegisterStrike } from './mode-chrome';
 import { playStrikeFeedback } from './strike-feedback';
@@ -32,7 +33,12 @@ export function EndlessMode({ stage, onBack, registerStrike }: PlayModeProps): R
     setCount((n) => n + 1);
     spawn('+1', 'plain');
   }, [stage, spawn]);
-  useRegisterStrike(registerStrike, strike);
+  const countStroke = useQuietHourStrokes();
+  const playerStrike = useCallback((): void => {
+    strike();
+    countStroke();
+  }, [strike, countStroke]);
+  useRegisterStrike(registerStrike, playerStrike);
 
   useEffect(() => {
     if (!auto) return;
@@ -42,7 +48,7 @@ export function EndlessMode({ stage, onBack, registerStrike }: PlayModeProps): R
 
   return (
     <>
-      <StrikeTapLayer label={t('endless.tapLabel')} onStrike={strike} dataId="endless-pad" />
+      <StrikeTapLayer label={t('endless.tapLabel')} onStrike={playerStrike} dataId="endless-pad" />
       <MoFloatAnchor stage={stage} items={floats.items} />
       <ModeBar onBack={onBack}>
         <span className="play-chip" data-id="endless-count">

@@ -5,8 +5,9 @@
  *
  * REST (all under `/api/rooms`, signed in): `POST /` create, `GET /:code` snapshot, `POST /:code/join`,
  * `POST /:code/leave`, `POST /:code/light`, `POST /:code/wishes` (RoomWishInput), `DELETE /:code/wishes/:id`
- * (host or author), `POST /:code/wishes/:id/report`, `POST /:code/lock` (host). Live updates: `GET /:code/events`
- * (server-sent events) sends `RoomSnapshot` as JSON in each message.
+ * (host or author), `POST /:code/wishes/:id/report`, `POST /:code/lock` (host, RoomLockInput). Live updates:
+ * `GET /:code/events` (server-sent events) sends `RoomSnapshot` as JSON in each message, and one `closed` event before
+ * the server ends the stream for good (the room was deleted or the viewer is no longer in it).
  */
 import { cleanText, isRecord } from './primitives';
 
@@ -22,8 +23,15 @@ export const ROOM_NAME_MAX = 40;
 export const ROOM_OPEN_ROOMS_PER_USER = 3;
 /** A room nobody lit a stick in is removed after this long. */
 export const ROOM_IDLE_TTL_MS = 2 * 60 * 60 * 1000;
+/** A room in ashes stays readable this long (for the share card), then it and everything in it is deleted. */
+export const ROOM_ASHES_GRACE_MS = 10 * 60 * 1000;
 /** Collective milestones (sticks lit) that add a purely visual effect to the burner. */
 export const ROOM_MILESTONES = [10, 25, 50] as const;
+/** Wishes one member may leave in one room, and the shortest gap between two of them. */
+export const ROOM_WISHES_PER_MEMBER = 5;
+export const ROOM_WISH_INTERVAL_MS = 5_000;
+/** A wish reported by this many members is taken down without waiting for the host. */
+export const ROOM_REPORTS_TO_HIDE = 3;
 
 /** Room codes avoid look-alike characters (no 0/O, 1/I/L). */
 export const ROOM_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -60,6 +68,8 @@ export interface RoomWish {
   readonly memberId: string;
   readonly text: string;
   readonly at: number;
+  /** How many members reported it (only a count is kept, never who). */
+  readonly reports: number;
 }
 
 export interface RoomSnapshot {
@@ -77,6 +87,8 @@ export interface RoomSnapshot {
   readonly litTotal: number;
   /** Id of the viewer's own member row. */
   readonly meId: string;
+  /** The wish the viewer reported (each member reports at most one), or null. */
+  readonly myReportedWishId: string | null;
   /** The server's clock at this snapshot, so devices with a wrong clock still show the right countdown. */
   readonly serverNow: number;
 }
@@ -84,6 +96,36 @@ export interface RoomSnapshot {
 export interface RoomWishInput {
   readonly text: string;
 }
+
+/** Body of `POST /:code/lock`; an empty body locks. */
+export interface RoomLockInput {
+  readonly locked: boolean;
+}
+
+export const parseRoomLockInput = (raw: unknown): RoomLockInput | null => {
+  if (raw === undefined || (isRecord(raw) && raw.locked === undefined)) return { locked: true };
+  return isRecord(raw) && typeof raw.locked === 'boolean' ? { locked: raw.locked } : null;
+};
+
+/** Error codes the room API answers with (`{ error }`); `wish-rejected` also carries `reason` (a WishRejection). */
+export const ROOM_ERRORS = [
+  'room-not-found',
+  'not-member',
+  'room-full',
+  'room-locked',
+  'room-ashes',
+  'too-many-rooms',
+  'already-lit',
+  'wish-rejected',
+  'wish-too-fast',
+  'wish-limit',
+  'wish-not-found',
+  'not-allowed',
+  'already-reported',
+  'own-wish',
+] as const;
+export type RoomErrorCode = (typeof ROOM_ERRORS)[number];
+export const isRoomErrorCode = (value: unknown): value is RoomErrorCode => (ROOM_ERRORS as readonly unknown[]).includes(value);
 
 /** Burn state of one stick at `now`: how far it has burnt (0..1) and the minutes left, rounded up. */
 export function stickState(stick: { readonly litAt: number; readonly burnsOutAt: number }, now: number): { progress: number; minutesLeft: number; burntOut: boolean } {

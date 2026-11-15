@@ -40,7 +40,7 @@ const MODE_LOOK: Readonly<Record<Exclude<PlayMode, 'yard'>, { pose: PoseName; sh
   // HTML panels: the character keeps company in a calm pose while the panel is open.
   journal: { pose: 'palms', shot: 'incense', spot: 'pray' },
   gentle: { pose: 'palms', shot: 'incense', spot: 'pray' },
-  radio: { pose: 'beads', shot: 'sutra', spot: 'mo' },
+  radio: { pose: 'rest', shot: 'sutra', spot: 'pray' },
   fortune: { pose: 'palms', shot: 'incense', spot: 'pray' },
   room: { pose: 'palms', shot: 'incense', spot: 'pray' },
 };

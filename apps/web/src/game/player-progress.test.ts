@@ -1,5 +1,6 @@
+import { MO_SKIN_IDS } from '@chuanho/contract';
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_PROGRESS, addRestraint, parseProgress } from './player-progress';
+import { DEFAULT_PROGRESS, MO_SKINS, addRestraint, parseProgress, stampPreferences } from './player-progress';
 
 describe('parseProgress', () => {
   it('keeps a valid restraint count', () => {
@@ -30,5 +31,31 @@ describe('addRestraint', () => {
     const next = addRestraint({ ...DEFAULT_PROGRESS, restraintCount: 2, merit: 10 });
     expect(next.restraintCount).toBe(3);
     expect(next.merit).toBe(10);
+  });
+});
+
+describe('preferences stamp', () => {
+  it('keeps a stored stamp and falls back to the floor value when it is missing or bad', () => {
+    expect(parseProgress({ ...DEFAULT_PROGRESS, updatedAt: 1_700_000_000_000 })?.updatedAt).toBe(1_700_000_000_000);
+    expect(parseProgress({ merit: 3 })?.updatedAt).toBe(1);
+    expect(parseProgress({ ...DEFAULT_PROGRESS, updatedAt: -5 })?.updatedAt).toBe(1);
+  });
+
+  it('moves only when a preference changed', () => {
+    const before = { ...DEFAULT_PROGRESS, updatedAt: 100 };
+    expect(stampPreferences(before, { ...before, merit: 10 }, 5_000).updatedAt).toBe(100);
+    expect(stampPreferences(before, { ...before, moSkin: 'fish' }, 5_000).updatedAt).toBe(5_000);
+    expect(stampPreferences(before, { ...before, ambientSounds: false }, 5_000).updatedAt).toBe(5_000);
+  });
+
+  it('never goes backwards when the clock is behind the stored stamp', () => {
+    const before = { ...DEFAULT_PROGRESS, updatedAt: 9_000 };
+    expect(stampPreferences(before, { ...before, moSkin: 'carved' }, 5_000).updatedAt).toBe(9_001);
+  });
+});
+
+describe('MO_SKINS', () => {
+  it('lists exactly the contract skins, in order', () => {
+    expect(MO_SKINS.map((skin) => skin.id)).toEqual([...MO_SKIN_IDS]);
   });
 });

@@ -20,7 +20,7 @@ export const PROP_ACTIONS: Readonly<Record<InteractivePropId, readonly WorldActi
 };
 
 /** Actions whose screens do not exist yet: they show a "coming soon" mark instead. */
-const COMING_SOON: ReadonlySet<WorldAction> = new Set<WorldAction>(['fortune', 'room']);
+const COMING_SOON: ReadonlySet<WorldAction> = new Set<WorldAction>(['fortune']);
 
 /** The corner icon bar: every action reachable without aiming at the scene. */
 export const SHORTCUT_BAR_ACTIONS: readonly WorldAction[] = ['incense', 'beat', 'sutra', 'endless', 'journal', 'gentle', 'radio', 'fortune', 'room'];

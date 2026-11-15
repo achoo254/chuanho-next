@@ -18,6 +18,11 @@ describe('world actions', () => {
     expect(isComingSoon('incense')).toBe(false);
   });
 
+  it('open the shared room; only the fortune is still coming soon', () => {
+    expect(isComingSoon('room')).toBe(false);
+    expect(isComingSoon('fortune')).toBe(true);
+  });
+
   it('find the prop behind each corner-bar action so it can glow', () => {
     // Fortune and the room have no prop in the yard yet (a fortune tube and a lantern would be their props).
     for (const action of SHORTCUT_BAR_ACTIONS.filter((a) => a !== 'fortune' && a !== 'room')) expect(propForAction(action)).not.toBeNull();

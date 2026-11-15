@@ -23,7 +23,7 @@ describe('routeActions', () => {
 
   it('keeps what needs the server as coming soon', () => {
     expect(routeActions(['fortune'])).toEqual({ kind: 'soon', actions: ['fortune'] });
-    expect(routeActions(['room'])).toEqual({ kind: 'soon', actions: ['room'] });
+    expect(routeActions(['room'])).toEqual({ kind: 'enter', mode: 'room' });
   });
 
   it('opens a single shortcut action directly and strikes on Space', () => {
