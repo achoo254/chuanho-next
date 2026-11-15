@@ -101,6 +101,52 @@
 
   /* game motion */
   --dur-pop: 650ms;
+
+  /* ---------------------------------------------------------------
+     The 3D diorama (?v=3d). The engine reads these with getComputedStyle,
+     so the scene's light and materials stay in this one file too.
+     --------------------------------------------------------------- */
+
+  /* time of day: sunset (default), lantern night, misty morning */
+  --c-scene-sunset-sky-top: #4b2a73;
+  --c-scene-sunset-sky-horizon: #f2a65e;
+  --c-scene-sunset-fog: #b9788a;
+  --c-scene-sunset-hemi-sky: #f7c9a0;
+  --c-scene-sunset-hemi-ground: #4a2f5c;
+  --c-scene-sunset-sun: #ffb070;
+  --c-scene-night-sky-top: #120a26;
+  --c-scene-night-sky-horizon: #3a1f52;
+  --c-scene-night-fog: #2a1840;
+  --c-scene-night-hemi-sky: #6b5aa8;
+  --c-scene-night-hemi-ground: #1a1030;
+  --c-scene-night-moon: #9fb4ff;
+  --c-scene-morning-sky-top: #a9c4e0;
+  --c-scene-morning-sky-horizon: #f4e6d6;
+  --c-scene-morning-fog: #e6e0e8;
+  --c-scene-morning-hemi-sky: #f0f4ff;
+  --c-scene-morning-hemi-ground: #b7a99a;
+  --c-scene-morning-sun: #fff1d6;
+
+  /* placeholder kit materials: soft vinyl pastels */
+  --c-scene-plinth: #6e4f7a;
+  --c-scene-stone: #d9cbb9;
+  --c-scene-stone-dark: #b3a391;
+  --c-scene-roof: #c4664a;
+  --c-scene-lacquer: #b8483a;
+  --c-scene-wall: #f3e3c8;
+  --c-scene-wood: #9a6a45;
+  --c-scene-lantern: #e2473d;
+  --c-scene-lantern-glow: #ffb35c;
+  --c-scene-vinyl: #fbf6ef;
+  --c-scene-blush: #f4a6a6;
+  --c-scene-ink: #2b1747;
+  --c-scene-mo: #8a4b2e;
+  --c-scene-book: #e9c46a;
+
+  /* the 3D game HUD */
+  --c-hud-panel: rgb(29 15 51 / 0.72);
+  --c-hud-panel-hover: rgb(67 38 107 / 0.9);
+  --c-hud-track: rgb(251 241 226 / 0.18);
 }
 
 @media (min-width: 768px) {

@@ -23,6 +23,12 @@ làm đăng nhập và đồng bộ), nên dev chỉ chạy web và chưa có pr
 | [`brand`](brand) | Biểu tượng app (bản vẽ tay tạm, thay bằng bản AI sau) |
 | [`apps/web/src/game`](apps/web/src/game) | Logic thuần có test: chấm nhịp, sinh nốt theo độ khó, một phiên một ngày, nhiệm vụ theo ngày |
 | [`scripts`](scripts) | `check-tokens`: kiểm màu chỉ nằm ở `tokens.css` và đủ tương phản WCAG AA |
+| [`apps/web/src/engine`](apps/web/src/engine) | Bản 3D: chọn WebGPU hoặc WebGL2, khởi động và dọn Babylon.js, bộ giảm chất lượng tự động (hàm quyết định thuần có test), trang `game-3d-shell` |
+| [`apps/web/src/scene`](apps/web/src/scene) | Cảnh diorama 3D: bố cục sân, bộ khối tạm, nạp mô hình theo tên, ánh sáng ba giờ trong ngày, hậu kỳ, camera tự khớp khung (và cảnh xếp lớp của bản 2D) |
+| [`apps/web/src/input`](apps/web/src/input) | Chọn vật bằng tia từ con trỏ, rung và kéo camera, phím tắt |
+| [`apps/web/src/hud`](apps/web/src/hud) | HUD biểu tượng đè lên canvas, màn nạp, nút Bắt đầu, bảng "i" (giới thiệu và cam kết) |
+| [`apps/web/src/fallback`](apps/web/src/fallback) | Ảnh tĩnh và thông báo ngắn cho máy không có WebGL2 |
+| [`apps/web/public/decoders/babylon`](apps/web/public/decoders/babylon) | Bộ giải nén meshopt và KTX2 của Babylon 9.36 (chép nguyên từ bản phát hành), tự host để không nạp gì từ CDN |
 
 Gói `@achoo254/*` cài từ tag git của `shared-next` (`github:achoo254/shared-next#v0.12.0&path:/packages/<gói>`),
 không dùng npm registry.
@@ -39,6 +45,25 @@ pnpm typecheck
 pnpm lint         # eslint + check:brand + check:tokens
 pnpm test         # vitest, tối đa 2 worker
 ```
+
+## Bản 3D (đang dựng, chưa là mặc định)
+
+Trang mặc định vẫn là bản 2D. Bản 3D (Babylon.js, canvas phủ toàn cửa sổ, HUD biểu tượng, thế giới là menu) chỉ bật khi
+địa chỉ có `?v=3d` (hoặc `#3d`), ví dụ `http://localhost:5331/?v=3d`. Babylon nằm trong các gói tách riêng, chỉ tải khi
+bật bản 3D, nên gói đầu của bản 2D gần như không đổi.
+
+| Tham số thêm | Tác dụng |
+|---|---|
+| `renderer=webgl2` | Bỏ qua WebGPU, chạy WebGL2 để so hai đường |
+| `quality=low\|medium\|high\|ultra` | Giữ cố định một mức chất lượng, tắt bộ giảm chất lượng tự động (để thử và chụp ảnh) |
+| `light=lanternNight\|mistyMorning` | Mở ở giờ khác (mặc định hoàng hôn); nút mặt trời trên HUD đổi giờ mượt |
+
+Canvas ghi `data-backend`, `data-quality`, `data-fps` để kiểm nhanh trong DevTools. Phím: Space hoặc Enter gõ mõ, 1 đến 3
+chọn thắp hương, Mõ Beat, tụng kinh, Esc quay lại. Bấm vật trong sân (lư hương, giá kinh, mõ, chuông, bát, bảng gỗ) hiện
+biểu tượng hành động; các chế độ chơi chưa nối vào bản 3D.
+
+Mô hình: cảnh dựng bằng khối hình học tạm. Khi có file `apps/web/public/models/<tên>.glb` (tên ở `PROP_ASSET_FILES`
+trong [`diorama-layout.ts`](apps/web/src/scene/diorama-layout.ts)), mô hình đó tự thay khối tạm, không cần sửa code.
 
 ## Kế hoạch
 

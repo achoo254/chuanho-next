@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['**/node_modules/**', '**/dist/**', '**/test-results/**', '**/playwright-report/**', '.data/**', 'brand/generated/**'],
+    ignores: ['**/node_modules/**', '**/dist/**', '**/test-results/**', '**/playwright-report/**', '.data/**', 'brand/generated/**', 'apps/web/public/decoders/**'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

@@ -2,6 +2,7 @@ import { LanguageSwitch } from '@achoo254/app-shell';
 import { type ReactNode, Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { unlockAudio } from './audio/audio-engine';
 import { BRAND_MARK_SRC, ECOSYSTEM_URL, brand } from './brand';
+import { isGame3dRequested } from './engine/game-3d-flag';
 import { GameSessionProvider } from './game/game-session-context';
 import { useI18n } from './i18n/i18n';
 import { requestTiltPermission } from './scene/use-parallax-tilt';
@@ -19,6 +20,8 @@ const MoEndlessScreen = lazy(() => import('./screens/mo-endless-screen').then((m
 const TungKinhScreen = lazy(() => import('./screens/tung-kinh-screen').then((m) => ({ default: m.TungKinhScreen })));
 const SessionEndScreen = lazy(() => import('./screens/session-end-screen').then((m) => ({ default: m.SessionEndScreen })));
 const ShareCardScreen = lazy(() => import('./share/share-card-screen').then((m) => ({ default: m.ShareCardScreen })));
+// The 3D game and Babylon.js load only when the address asks for them (`?v=3d` or `#3d`); the 2D page stays as it was.
+const Game3dShell = lazy(() => import('./engine/game-3d-shell').then((m) => ({ default: m.Game3dShell })));
 
 function SiteHeader(): ReactNode {
   const { locale, setLocale } = useI18n();
@@ -121,8 +124,8 @@ function GameShell(): ReactNode {
   );
 }
 
-/** Every page: header, then the intro (with footer) or the game (with the bottom tabs), over the sunset backdrop. */
-export function App(): ReactNode {
+/** The 2D page: header, then the intro (with footer) or the game (with the bottom tabs), over the sunset backdrop. */
+function Classic2dApp(): ReactNode {
   const { t } = useI18n();
   const [started, setStarted] = useState(false);
   useEffect(() => {
@@ -142,6 +145,19 @@ export function App(): ReactNode {
         </main>
         {!started && <SiteFooter />}
       </div>
+    </GameSessionProvider>
+  );
+}
+
+/** The 3D game when the address opts in, the 2D page otherwise. Decided once per page load. */
+export function App(): ReactNode {
+  const [game3d] = useState(() => isGame3dRequested(window.location.search, window.location.hash));
+  if (!game3d) return <Classic2dApp />;
+  return (
+    <GameSessionProvider>
+      <Suspense fallback={<div className="screen-loading" aria-busy="true" />}>
+        <Game3dShell />
+      </Suspense>
     </GameSessionProvider>
   );
 }
