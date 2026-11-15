@@ -1,0 +1,260 @@
+/* The karma journal and its release flow. Colours only from tokens.css; the shared panel parts are in panel.css. */
+
+.journal-checkin,
+.journal-section {
+  display: grid;
+  gap: var(--space-2);
+}
+.journal-fieldset {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.journal-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.journal-note-label {
+  display: grid;
+  gap: var(--space-1);
+}
+.journal-note {
+  resize: vertical;
+}
+.journal-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.journal-icon {
+  flex: none;
+}
+
+/* ---------- the karma clouds ---------- */
+.journal-entry {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+.journal-entry-text {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.journal-entry-kind {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  font-weight: 700;
+}
+.journal-entry-day {
+  margin-left: var(--space-1);
+  color: var(--c-text-muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+.journal-entry-note {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.journal-entry-steps {
+  display: flex;
+  gap: var(--space-1);
+  margin: 0;
+}
+.journal-step-dot {
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-full);
+}
+.journal-step-dot[data-done='true'] {
+  border-color: var(--c-lotus);
+  background: var(--c-lotus);
+}
+.journal-entry-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.journal-entry-released {
+  color: var(--c-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+.journal-delete {
+  display: inline-grid;
+  place-items: center;
+  min-width: 36px;
+  padding: 0;
+}
+
+.journal-cloud {
+  flex: none;
+  overflow: visible;
+}
+.journal-cloud-body {
+  fill: var(--c-text-muted);
+  transform-origin: 50% 60%;
+  transition:
+    opacity var(--dur-pop) var(--ease-standard),
+    transform var(--dur-pop) var(--ease-standard);
+}
+/* Released: the cloud thins out and drifts up, leaving a faint trace. */
+.journal-cloud[data-dissolved='true'] .journal-cloud-body {
+  opacity: 0.22;
+  transform: translateY(-3px) scale(0.8);
+}
+
+/* ---------- plants and flowers (week chart, bloom) ---------- */
+.journal-stem {
+  fill: none;
+  stroke: var(--c-leaf-deep);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+.journal-leaf {
+  fill: var(--c-leaf);
+}
+.journal-flower-petal {
+  fill: var(--c-lotus);
+}
+.journal-flower-heart {
+  fill: var(--c-scene-flower-heart);
+}
+.journal-ground {
+  stroke: var(--c-border);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.journal-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.journal-week-day {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+}
+.journal-week-plant {
+  width: 100%;
+  max-width: 44px;
+  height: auto;
+}
+.journal-week-label {
+  color: var(--c-text-muted);
+  font-size: 12px;
+}
+
+/* ---------- delete all, privacy, restraint ---------- */
+.journal-confirm {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--c-lotus-deep);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+}
+.journal-danger {
+  border-color: var(--c-lotus-deep);
+}
+.journal-privacy {
+  text-align: center;
+}
+.journal-restraint,
+.release-skip {
+  border: 1px solid var(--c-border);
+  font: inherit;
+  cursor: pointer;
+}
+.journal-restraint:focus-visible,
+.release-skip:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* ---------- release flow ---------- */
+/* The stroke counter floats at the top over the strike pad and never takes a tap from it. */
+.release-reset-card {
+  position: absolute;
+  top: max(88px, calc(env(safe-area-inset-top, 0px) + 80px));
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--c-hud-panel);
+  color: var(--c-text);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.release-ring-track {
+  fill: none;
+  stroke: var(--c-hud-track);
+  stroke-width: 5;
+}
+.release-ring-fill {
+  fill: none;
+  stroke: var(--c-primary);
+  stroke-width: 5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset var(--dur-fast) var(--ease-standard);
+}
+.release-reset-count {
+  margin: 0;
+  color: var(--c-primary);
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.release-apology-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.release-apology-text {
+  flex: 1;
+  margin: 0;
+  user-select: text;
+}
+.release-end {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+.journal-bloom {
+  transform-origin: 50% 100%;
+  animation: journal-bloom var(--dur-pop) var(--ease-standard);
+}
+
+@keyframes journal-bloom {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journal-bloom {
+    animation: none;
+  }
+}

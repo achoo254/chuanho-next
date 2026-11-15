@@ -4,7 +4,7 @@
  * session of the local day. Afterwards the steps reset so the player can go around again (for fun, no reward).
  */
 import { type ReactNode, createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { type PlayerProgress, completeFullSession, loadProgress, saveProgress } from './player-progress';
+import { type PlayerProgress, addRestraint, completeFullSession, loadProgress, saveProgress } from './player-progress';
 import { localDateKey } from './session-day';
 
 export const SESSION_STEPS = ['incense', 'beat', 'sutra'] as const;
@@ -23,11 +23,13 @@ interface GameSession {
   readonly progress: PlayerProgress;
   readonly steps: StepsDone;
   readonly lastResult: SessionResult | null;
-  /** Times the player held back a harsh word; journalling comes later, so this stays 0 for now. */
+  /** Times the player held back a harsh word (the journal's "mình đã nhịn"), shown only as a positive stat. */
   readonly restraintCount: number;
   /** Marks a step done; returns true when this completed the full session (the caller shows the end screen). */
   completeStep(step: SessionStep): boolean;
   recordCombo(combo: number): void;
+  /** Counts one more held-back harsh word. */
+  recordRestraint(): void;
   updateProgress(change: (current: PlayerProgress) => PlayerProgress): void;
 }
 
@@ -69,9 +71,11 @@ export function GameSessionProvider({ children }: { children: ReactNode }): Reac
     [updateProgress],
   );
 
+  const recordRestraint = useCallback((): void => updateProgress(addRestraint), [updateProgress]);
+
   const value = useMemo<GameSession>(
-    () => ({ progress, steps, lastResult, restraintCount: 0, completeStep, recordCombo, updateProgress }),
-    [progress, steps, lastResult, completeStep, recordCombo, updateProgress],
+    () => ({ progress, steps, lastResult, restraintCount: progress.restraintCount, completeStep, recordCombo, recordRestraint, updateProgress }),
+    [progress, steps, lastResult, completeStep, recordCombo, recordRestraint, updateProgress],
   );
   return <GameSessionContext value={value}>{children}</GameSessionContext>;
 }

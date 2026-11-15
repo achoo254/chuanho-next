@@ -30,6 +30,8 @@ export interface PlayerProgress {
   readonly lastRewardedDay: string | null;
   readonly peacefulDays: number;
   readonly bestCombo: number;
+  /** Times the player chose to hold back a harsh word: a positive stat only, never a debt or a streak. */
+  readonly restraintCount: number;
   readonly moSkin: MoSkinId;
   /** Bell and singing bowl cues (the wooden bell itself always sounds). */
   readonly ambientSounds: boolean;
@@ -40,6 +42,7 @@ export const DEFAULT_PROGRESS: PlayerProgress = {
   lastRewardedDay: null,
   peacefulDays: 0,
   bestCombo: 0,
+  restraintCount: 0,
   moSkin: 'red',
   ambientSounds: true,
 };
@@ -56,6 +59,7 @@ export function parseProgress(raw: unknown): PlayerProgress | null {
     lastRewardedDay: isDayKey(r.lastRewardedDay) ? r.lastRewardedDay : null,
     peacefulDays: isCount(r.peacefulDays) ? r.peacefulDays : DEFAULT_PROGRESS.peacefulDays,
     bestCombo: isCount(r.bestCombo) ? r.bestCombo : DEFAULT_PROGRESS.bestCombo,
+    restraintCount: isCount(r.restraintCount) ? r.restraintCount : DEFAULT_PROGRESS.restraintCount,
     moSkin: isSkin(r.moSkin) ? r.moSkin : DEFAULT_PROGRESS.moSkin,
     ambientSounds: typeof r.ambientSounds === 'boolean' ? r.ambientSounds : DEFAULT_PROGRESS.ambientSounds,
   };
@@ -81,6 +85,11 @@ export function completeFullSession(progress: PlayerProgress, today: string): { 
     },
     rewarded: true,
   };
+}
+
+/** The player held back a harsh word once more. */
+export function addRestraint(progress: PlayerProgress): PlayerProgress {
+  return { ...progress, restraintCount: progress.restraintCount + 1 };
 }
 
 export function isUnlocked(item: { readonly merit: number }, progress: PlayerProgress): boolean {
