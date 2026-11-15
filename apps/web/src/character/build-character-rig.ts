@@ -1,6 +1,6 @@
 /**
  * The character built from shapes in code: a little temple novice in the soft-vinyl blind-box style. A big round
- * head with ears and a forelock, an AI-drawn face, a saffron patchwork robe with a crossed collar and a bead
+ * shaved head with ears and six incense marks, an AI-drawn face, a saffron patchwork robe with a crossed collar and a bead
  * necklace, sleeved arms with mitten hands, stubby legs in slippers. Every part hangs on its own transform node so
  * the animator can turn joints:
  *

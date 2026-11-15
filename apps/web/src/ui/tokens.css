@@ -251,12 +251,12 @@
    The 3D character (a little temple novice) and its speech bubble
    --------------------------------------------------------------- */
 :root {
-  /* vinyl skin, saffron robe with a deeper collar and cuffs, slippers, the forelock, prayer beads, the cushion */
+  /* vinyl skin, saffron robe with a deeper collar and cuffs, slippers, the incense-burn marks, prayer beads, the cushion */
   --c-scene-char-skin: #ecc2a6;
   --c-scene-char-robe: #f4a95e;
   --c-scene-char-robe-dark: #c86f3c;
   --c-scene-char-shoe: #7a4632;
-  --c-scene-char-hair: #3d2a3a;
+  --c-scene-char-mark: #9a4a3c;
   --c-scene-char-bead: #8c4f30;
   --c-scene-char-cushion: #d0584c;
   /* the soft contact shadow under the feet */

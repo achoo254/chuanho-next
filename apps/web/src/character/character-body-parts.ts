@@ -1,7 +1,7 @@
 /**
  * The shapes of the character, each a small builder: the bell-shaped robe turned on a lathe with its crossed collar,
  * the prayer-bead necklace, sleeved arms with mitten hands, stubby legs in slippers, the robe pooled over crossed
- * legs when sitting, and the big round head with ears and a little forelock (a temple novice's tuft).
+ * legs when sitting, and the big round shaved head with ears and the six incense marks of a monk.
  *
  * Heights are in the body's own space with the feet at y = 0; the character faces −z.
  */
@@ -226,7 +226,7 @@ export function buildLap(scene: Scene, parent: TransformNode, materials: Charact
 /** The size of the lap at full sit. */
 export const LAP_SIZE = [0.86, 0.26, 0.6] as const;
 
-/** The skull, ears and the little forelock. Returns the skull (the face decals are projected onto it). */
+/** The skull, ears and the six incense marks on the shaved crown. Returns the skull (the face decals are projected onto it). */
 export function buildHead(scene: Scene, head: TransformNode, materials: CharacterMaterials, collect: Collect): Mesh {
   const skull = CreateSphere('skull', { diameter: RIG.headRadius * 2, segments: 32 }, scene);
   skull.scaling.set(1.07, 0.96, 1);
@@ -242,18 +242,22 @@ export function buildHead(scene: Scene, head: TransformNode, materials: Characte
     ear.parent = head;
     collect(ear);
   }
-  // The forelock: a soft round tuft on the crown with a small curl tipping forward.
-  const tuft = CreateSphere('tuft', { diameter: 0.17, segments: 12 }, scene);
-  tuft.scaling.set(1, 0.62, 1.15);
-  tuft.position.set(0, RIG.headCentreAboveNeck + 0.465, -0.1);
-  tuft.rotation.x = -0.35;
-  tuft.material = materials.hair;
-  tuft.parent = head;
-  collect(tuft);
-  const curl = CreateSphere('tuft-curl', { diameter: 0.09, segments: 10 }, scene);
-  curl.position.set(0.035, RIG.headCentreAboveNeck + 0.45, -0.2);
-  curl.material = materials.hair;
-  curl.parent = head;
-  collect(curl);
+  // Six incense-burn marks (the ordination dots) on the shaved crown, two rows of three.
+  const crownY = RIG.headCentreAboveNeck;
+  const radius = RIG.headRadius;
+  for (const z of [-0.075, 0.075]) {
+    for (const x of [-0.13, 0, 0.13]) {
+      const mark = CreateSphere('incense-mark', { diameter: 0.058, segments: 10 }, scene);
+      mark.scaling.set(1, 0.38, 1);
+      // On the skull's surface (an ellipsoid scaled 1.07, 0.96, 1), sunk a hair so only a flat dot shows.
+      const rise = 0.96 * radius * Math.sqrt(Math.max(0, 1 - (x / (1.07 * radius)) ** 2 - (z / radius) ** 2));
+      mark.position.set(x, crownY + rise - 0.004, z);
+      mark.rotation.z = -x * 0.9;
+      mark.rotation.x = z * 0.9;
+      mark.material = materials.mark;
+      mark.parent = head;
+      collect(mark);
+    }
+  }
   return skull;
 }

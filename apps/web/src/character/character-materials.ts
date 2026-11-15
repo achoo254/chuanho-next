@@ -1,7 +1,7 @@
 /**
  * The character's surfaces: soft vinyl skin with a faint clear-coat shine (the blind-box toy look), a matte cotton
  * robe with a soft sheen at its edges and the AI-drawn patchwork, a deeper robe colour for collar, cuffs and
- * trousers, slippers, the forelock, wooden beads and the meditation cushion. Colours come from tokens.css.
+ * trousers, slippers, the incense marks, wooden beads and the meditation cushion. Colours come from tokens.css.
  */
 import { PBRMaterial } from '@babylonjs/core/Materials/PBR/pbrMaterial';
 import type { Texture } from '@babylonjs/core/Materials/Textures/texture';
@@ -13,7 +13,7 @@ export interface CharacterMaterials {
   readonly robe: PBRMaterial;
   readonly robeDark: PBRMaterial;
   readonly shoe: PBRMaterial;
-  readonly hair: PBRMaterial;
+  readonly mark: PBRMaterial;
   readonly bead: PBRMaterial;
   readonly cushion: PBRMaterial;
   dispose(): void;
@@ -53,7 +53,7 @@ export function createCharacterMaterials(scene: Scene, fabric: Texture | null): 
     robe: cloth(scene, 'robe', '--c-scene-char-robe', fabric, 3),
     robeDark: cloth(scene, 'robe-dark', '--c-scene-char-robe-dark', null, 1),
     shoe: vinyl(scene, 'shoe', '--c-scene-char-shoe', 0.55, 0.25),
-    hair: vinyl(scene, 'hair', '--c-scene-char-hair', 0.45, 0.3),
+    mark: vinyl(scene, 'mark', '--c-scene-char-mark', 0.8, 0),
     bead: vinyl(scene, 'bead', '--c-scene-char-bead', 0.5, 0),
     cushion: cloth(scene, 'cushion', '--c-scene-char-cushion', fabric, 1),
   };
