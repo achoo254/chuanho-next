@@ -6,6 +6,9 @@ import './ui/tokens.css';
 // The shared shell's rules (shell-* classes only, e.g. the language pill); app.css dresses them in the sunset look.
 import '@achoo254/app-shell/app-shell.css';
 import './ui/app.css';
+import './ui/game-screens.css';
+import './ui/scene-and-tap.css';
+import './ui/game-modes.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app';

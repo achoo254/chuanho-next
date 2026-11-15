@@ -100,6 +100,11 @@ a {
   justify-items: center;
   text-align: center;
 }
+.intro-mascot {
+  width: 140px;
+  height: auto;
+  filter: drop-shadow(0 0 3px var(--c-sticker-outline)) drop-shadow(0 12px 12px var(--c-drop-shadow));
+}
 .intro-title {
   margin: 0;
   font-size: clamp(26px, 7vw, 40px);

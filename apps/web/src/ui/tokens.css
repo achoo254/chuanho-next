@@ -59,6 +59,48 @@
   /* shadows */
   --shadow-gold: 0 10px 30px -10px rgb(224 178 90 / 0.6);
   --shadow-focus: 0 0 0 3px rgb(240 201 120 / 0.4);
+
+  /* game chrome: the bottom tab bar and the glass panels floating over the scene */
+  --c-nav: #241339;
+  --c-scrim: rgb(29 15 51 / 0.82);
+  --c-scrim-soft: rgb(29 15 51 / 0.55);
+
+  /* accents: neon kept to small highlights over the temple, sunset purple, bronze */
+  --c-neon-pink: #ff2fa0;
+  --c-neon-cyan: #6fe9ff; /* also GOOD text */
+  --c-dusk: #7a4fa8;
+  --c-bronze: #c98a4b;
+
+  /* the layered scene: light rays through incense haze, vignette, drop shadows, sticker outline */
+  --c-ray: rgb(255 205 130 / 0.26);
+  --c-ray-soft: rgb(255 205 130 / 0.16);
+  --c-vignette: rgb(12 5 24 / 0.62);
+  --c-drop-shadow: rgb(0 0 0 / 0.5);
+  --c-sticker-outline: #ffffff;
+  --c-sticker-backing: #fff6e8;
+
+  /* incense: stick, glowing ember, smoke */
+  --c-incense-body: #c99a62;
+  --c-incense-handle: #8c3a2e;
+  --c-ember: #ff7a3d;
+  --c-ember-glow: rgb(255 122 61 / 0.7);
+  --c-smoke: rgb(240 230 255 / 0.4);
+
+  /* yard decorations drawn in CSS */
+  --c-lotus: #f5a3c0;
+  --c-lotus-deep: #de6f9a;
+  --c-leaf: #5f9a5a;
+  --c-leaf-deep: #3f7440;
+  --c-trunk: #7a5634;
+  --c-pot: #9a5b3a;
+
+  /* the share card */
+  --c-card-shade-top: rgb(29 15 51 / 0);
+  --c-card-shade-bottom: rgb(29 15 51 / 0.94);
+  --c-card-panel: rgb(55 30 90 / 0.9);
+
+  /* game motion */
+  --dur-pop: 650ms;
 }
 
 @media (min-width: 768px) {
@@ -72,5 +114,6 @@
   :root {
     --dur-fast: 1ms;
     --dur-base: 1ms;
+    --dur-pop: 1ms;
   }
 }

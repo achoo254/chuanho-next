@@ -18,8 +18,8 @@ const SCANNED = new Set(['.ts', '.tsx', '.css']);
 const AA_TEXT = 4.5;
 
 /** Foreground tokens and the backgrounds each must be readable on. */
-const SCREEN_TEXT = ['--c-text', '--c-text-muted', '--c-primary'];
-const SCREEN_BACKGROUNDS = ['--c-bg', '--c-bg-deep', '--c-glow', '--c-surface', '--c-surface-raised', '--c-topbar'];
+const SCREEN_TEXT = ['--c-text', '--c-text-muted', '--c-primary', '--c-neon-cyan'];
+const SCREEN_BACKGROUNDS = ['--c-bg', '--c-bg-deep', '--c-glow', '--c-surface', '--c-surface-raised', '--c-topbar', '--c-nav'];
 
 async function sourceFiles(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });

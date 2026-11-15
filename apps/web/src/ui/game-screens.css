@@ -1,0 +1,308 @@
+/* The game shell (one phone-sized screen with bottom tabs) and every game screen. Colours from tokens.css only. */
+
+/* ---------- shell: no page scroll while playing ---------- */
+.site.is-playing {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.main-game {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+}
+.game-shell {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  max-width: 560px;
+  margin-inline: auto;
+}
+.game-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+.screen-loading {
+  flex: 1;
+}
+
+.bottom-nav {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-top: 1px solid var(--c-border);
+  background: var(--c-nav);
+}
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  border: 0;
+  background: none;
+  color: var(--c-text-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bottom-nav-item[aria-current='page'] {
+  color: var(--c-primary);
+}
+
+/* ---------- shared pieces ---------- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.game-screen,
+.yard {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+.screen-header {
+  display: grid;
+  grid-template-columns: var(--tap) 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+}
+.screen-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+.btn-icon {
+  width: var(--tap);
+  height: var(--tap);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-full);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.chip {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--c-scrim);
+  color: var(--c-text);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.chips-row,
+.hud-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.hud-chips {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  right: var(--space-3);
+  justify-content: space-between;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-toggle,
+.btn-chip {
+  min-height: var(--tap);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-full);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
+}
+.btn-primary {
+  border: 0;
+  background: var(--c-primary-solid);
+  color: var(--c-on-primary);
+  box-shadow: var(--shadow-gold);
+}
+.btn-primary:hover {
+  background: var(--c-primary-solid-hover);
+}
+.btn-secondary,
+.btn-toggle {
+  border: 1px solid var(--c-border);
+  background: var(--c-surface-raised);
+  color: var(--c-text);
+}
+.btn-toggle[aria-pressed='true'] {
+  border-color: var(--c-primary);
+  color: var(--c-primary);
+}
+.btn-chip {
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: 13px;
+}
+.btn-primary:active,
+.btn-secondary:active,
+.btn-toggle:active {
+  transform: scale(0.97);
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ---------- yard ---------- */
+.session-card {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-top: 1px solid var(--c-border);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--c-surface);
+}
+.session-card-compact {
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+}
+.session-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+.session-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.step-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  min-height: 72px;
+  padding: var(--space-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: var(--c-surface-raised);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.step-btn.is-next {
+  border-color: var(--c-primary);
+  box-shadow: var(--shadow-gold);
+}
+.step-btn.is-done {
+  color: var(--c-primary);
+}
+.step-index {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid currentColor;
+  border-radius: var(--radius-full);
+  font-size: 14px;
+}
+.session-row,
+.level-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.session-note,
+.overlay-note {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 14px;
+  text-align: center;
+}
+.session-note:empty {
+  display: none;
+}
+.about summary {
+  color: var(--c-text-muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+.about[open] {
+  display: grid;
+  gap: var(--space-2);
+}
+.about p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* ---------- overlays over a scene ---------- */
+.overlay-card {
+  position: absolute;
+  left: var(--space-4);
+  right: var(--space-4);
+  top: 50%;
+  z-index: 5;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-4);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  background: var(--c-scrim);
+  backdrop-filter: blur(6px);
+  text-align: center;
+  transform: translateY(-50%);
+}
+.overlay-card p {
+  margin: 0;
+}
+.overlay-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+.scene-hint {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-4);
+  right: var(--space-4);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--c-scrim);
+  font-weight: 600;
+  text-align: center;
+}
+.scene-cta {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-5);
+  transform: translateX(-50%);
+}
