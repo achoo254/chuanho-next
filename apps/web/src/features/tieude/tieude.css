@@ -1,0 +1,128 @@
+/* Tiểu Đệ's nudge chip (tieude-nudge.tsx): bottom centre, just above the corner bar, clear of the top HUD.
+   Colours only from tokens.css. Reduced motion keeps the fade and drops the rise. */
+
+.tieude-layer {
+  position: absolute;
+  left: 50%;
+  /* The corner bar's own offset, its height (one tap target plus padding) and a gap. */
+  bottom: calc(max(var(--space-3), env(safe-area-inset-bottom, 0px)) + var(--tap) + 2 * var(--space-1) + var(--space-3));
+  width: min(420px, calc(100vw - 2 * var(--space-4)));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.tieude-nudge {
+  display: grid;
+  justify-items: end;
+  gap: var(--space-1);
+  pointer-events: auto;
+  animation: tieude-in var(--dur-pop) var(--ease-standard) both;
+}
+
+.tieude-nudge-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-2);
+  border: 2px solid var(--c-bubble-line);
+  border-radius: var(--radius-full);
+  background: var(--c-bubble-bg);
+  box-shadow: 0 4px 14px var(--c-bubble-shadow);
+  color: var(--c-bubble-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tieude-nudge-main:focus-visible,
+.tieude-nudge-silence:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.tieude-nudge-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.tieude-nudge-name {
+  color: var(--c-bubble-ink);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.tieude-nudge-line {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.tieude-nudge-silence {
+  min-height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-full);
+  background: var(--c-hud-panel);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* The avatar. */
+.tieude-avatar {
+  flex: none;
+}
+.tieude-avatar-bg {
+  fill: var(--c-surface-raised);
+}
+.tieude-avatar-robe {
+  fill: var(--c-scene-char-robe);
+}
+.tieude-avatar-robe-fold {
+  fill: none;
+  stroke: var(--c-scene-char-robe-dark);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+.tieude-avatar-head {
+  fill: var(--c-scene-char-skin);
+}
+.tieude-avatar-antenna {
+  stroke: var(--c-bronze);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+.tieude-avatar-antenna-tip {
+  fill: var(--c-neon-cyan);
+}
+.tieude-avatar-eye {
+  fill: var(--c-scene-ink);
+}
+.tieude-avatar-blush {
+  fill: var(--c-scene-blush);
+}
+.tieude-avatar-mouth {
+  fill: none;
+  stroke: var(--c-scene-ink);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+@keyframes tieude-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes tieude-fade {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tieude-nudge {
+    animation-name: tieude-fade;
+  }
+}

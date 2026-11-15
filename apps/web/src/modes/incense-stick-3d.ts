@@ -18,6 +18,10 @@ const STICK_LENGTH = 0.9;
 /** Share of the stick that burns away by the end. */
 const BURN_AWAY = 0.55;
 const SMOKE_EVERY_MS = 140;
+/** The smallest ember a dimmed (not out) flame keeps, as a share of its full size. */
+const MIN_EMBER_SIZE = 0.35;
+/** Below this ember level no smoke rises at all. */
+const SMOKE_MIN_EMBER = 0.05;
 
 /** The three sticks: sideways offset, front-back offset, lean and relative height (the middle one stands tallest). */
 const STICK_LAYOUT = [
@@ -37,6 +41,11 @@ export interface IncenseStick3d {
   setBurn(fraction: number | null): void;
   /** Whether smoke is pouring (while the player holds). */
   setSmoking(on: boolean): void;
+  /**
+   * How bright the ember glows, 0 (dark, no smoke) to 1 (full, the default): scales the ember's size and glow and the
+   * smoke rate. Never changes the stick's length (that is `setBurn`).
+   */
+  setEmberLevel(level: number): void;
   update(deltaMs: number): void;
   dispose(): void;
 }
@@ -51,7 +60,8 @@ export function createIncenseStick(scene: Scene, censer: TransformNode, stickMat
 
   const emberMaterial = new StandardMaterial('incense-ember', scene);
   emberMaterial.disableLighting = true;
-  emberMaterial.emissiveColor = tokenColor3('--c-ember').scale(1.6);
+  const fullEmber = tokenColor3('--c-ember').scale(1.6);
+  emberMaterial.emissiveColor = fullEmber.clone();
   // A lit offering is three sticks side by side, fanned a little, the middle one a touch taller.
   const sticks: StickParts[] = STICK_LAYOUT.map((layout, index) => {
     const mesh = CreateCylinder(`incense-body-${index}`, { diameter: 0.04, height: STICK_LENGTH, tessellation: 8 }, scene);
@@ -76,6 +86,7 @@ export function createIncenseStick(scene: Scene, censer: TransformNode, stickMat
   });
   let burn: number | null = null;
   let smoking = false;
+  let emberLevel = 1;
   let sinceSmoke = 0;
   let nextSmoker = 0;
   const tip = new Vector3();
@@ -88,9 +99,11 @@ export function createIncenseStick(scene: Scene, censer: TransformNode, stickMat
       mesh.scaling.y = length * layout.height;
       // The ember is a child of the stick, so it sits at the top of the (scaled) stick in the stick's own units.
       ember.position.y = STICK_LENGTH / 2;
-      ember.scaling.y = 1 / Math.max(0.2, length * layout.height);
-      ember.setEnabled(burn > 0);
+      const size = MIN_EMBER_SIZE + (1 - MIN_EMBER_SIZE) * emberLevel;
+      ember.scaling.set(size, size / Math.max(0.2, length * layout.height), size);
+      ember.setEnabled(burn > 0 && emberLevel > 0);
     }
+    fullEmber.scaleToRef(emberLevel, emberMaterial.emissiveColor);
   };
   place();
 
@@ -102,11 +115,17 @@ export function createIncenseStick(scene: Scene, censer: TransformNode, stickMat
     setSmoking(on) {
       smoking = on;
     },
+    setEmberLevel(level) {
+      const next = Number.isFinite(level) ? Math.max(0, Math.min(1, level)) : 1;
+      if (next === emberLevel) return;
+      emberLevel = next;
+      place();
+    },
     update(deltaMs) {
       sinceSmoke += deltaMs;
-      // Lit incense keeps a thin wisp; holding it pours more.
-      const every = smoking ? SMOKE_EVERY_MS : SMOKE_EVERY_MS * 4;
-      if (burn !== null && burn > 0 && sinceSmoke >= every) {
+      // Lit incense keeps a thin wisp; holding it pours more; a dimmed ember smokes less in step with its glow.
+      const every = (smoking ? SMOKE_EVERY_MS : SMOKE_EVERY_MS * 4) / Math.max(SMOKE_MIN_EMBER, emberLevel);
+      if (burn !== null && burn > 0 && emberLevel >= SMOKE_MIN_EMBER && sinceSmoke >= every) {
         sinceSmoke = 0;
         const lit = sticks[nextSmoker % sticks.length];
         nextSmoker += 1;

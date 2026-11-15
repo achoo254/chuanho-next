@@ -245,6 +245,12 @@
   .game3d-bar {
     left: 50%;
     transform: translateX(-50%);
+    /* Eight buttons are wider than a narrow phone: wrap to a second row instead of running off the screen. */
+    flex-wrap: wrap;
+    justify-content: center;
+    width: max-content;
+    max-width: calc(100vw - 2 * var(--space-3));
+    border-radius: var(--radius-lg);
   }
 }
 

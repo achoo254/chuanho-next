@@ -47,7 +47,19 @@ export class RoomStore {
     if (hosting >= ROOM_OPEN_ROOMS_PER_USER) throw new RoomError('too-many-rooms');
     const code = this.unusedCode();
     const host = this.newMember(userId, name);
-    const room: Room = { code, input, hostMemberId: host.id, locked: false, members: new Map([[userId, host]]), departed: new Map(), wishes: [], litTotal: 0, lastActivityAt: now, ashesAt: null };
+    const room: Room = {
+      code,
+      input,
+      hostMemberId: host.id,
+      locked: false,
+      members: new Map([[userId, host]]),
+      departed: new Map(),
+      removed: new Set(),
+      wishes: [],
+      litTotal: 0,
+      lastActivityAt: now,
+      ashesAt: null,
+    };
     this.rooms.set(code, room);
     return this.view(room, host);
   }
@@ -55,9 +67,11 @@ export class RoomStore {
   /**
    * Joins (or re-enters) a room; an existing member always gets back in, even when it is locked, full or in ashes. One
    * who left comes back as the same member (stick, wish count and report kept) under the same rules as a newcomer.
+   * One the host removed never gets back in (`removed`).
    */
   join(code: string, userId: string, name: string): RoomSnapshot {
     const room = this.room(code);
+    if (room.removed.has(userId)) throw new RoomError('removed');
     const existing = room.members.get(userId);
     if (existing) return this.view(room, existing);
     if (room.ashesAt !== null) throw new RoomError('room-ashes');
@@ -115,6 +129,26 @@ export class RoomStore {
     const member = this.memberOf(room, userId);
     this.options.log?.(reportWish(room, member, wishId));
     return this.view(room, member);
+  }
+
+  /**
+   * Host only: removes another member by their room id. Their stick stays counted in `litTotal` (and milestones) but
+   * leaves the burner with them, their wishes are deleted, and they cannot come back into this room. Returns the host's
+   * snapshot and the removed account (whose live streams the caller closes).
+   */
+  removeMember(code: string, userId: string, memberId: string): { readonly snapshot: RoomSnapshot; readonly removedUserId: string } {
+    const room = this.room(code);
+    const host = this.memberOf(room, userId);
+    if (room.hostMemberId !== host.id) throw new RoomError('not-allowed');
+    if (memberId === host.id) throw new RoomError('cannot-remove-self');
+    const target = [...room.members.values()].find((member) => member.id === memberId);
+    if (!target) throw new RoomError('not-member');
+    room.members.delete(target.userId);
+    room.removed.add(target.userId);
+    removeWishes(room, (wish) => wish.memberId === target.id);
+    this.options.log?.('room member removed by host');
+    this.settle(room);
+    return { snapshot: this.view(room, host), removedUserId: target.userId };
   }
 
   /** Host only: a locked room lets nobody new in. */
@@ -195,9 +229,10 @@ export class RoomStore {
     return room;
   }
 
+  /** The caller's member row; `removed` for one the host removed, `not-member` for anyone else outside. */
   private memberOf(room: Room, userId: string): Member {
     const member = room.members.get(userId);
-    if (!member) throw new RoomError('not-member');
+    if (!member) throw new RoomError(room.removed.has(userId) ? 'removed' : 'not-member');
     return member;
   }
 

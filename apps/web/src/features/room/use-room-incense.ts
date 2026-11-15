@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { buzz, playSample } from '../../audio/audio-engine';
 import { useGameSession } from '../../game/game-session-context';
 import type { PlayStage } from '../../modes/play-stage';
-import { LIGHT_UP_IGNITE_MS, LIGHT_UP_MS, type MyStickSource, lightUpLook, liveLook, myStickStatus } from './room-incense-timeline';
+import { LIGHT_UP_IGNITE_MS, LIGHT_UP_MS, type MyStickSource, PUT_AWAY, applyIncenseLook, lightUpLook, liveLook, myStickStatus } from './room-incense-timeline';
 
 const LINK_EVERY_MS = 1_000;
 /** The burn the minigame shows when the player has no burning stick (practice). */
@@ -40,8 +40,7 @@ export function useRoomIncense(stage: PlayStage, source: MyStickSource, active: 
     if (!active) return;
     const apply = (): void => {
       if (lightUpAt.current !== null) return;
-      const look = liveLook(myStickStatus(sourceRef.current, Date.now()));
-      stage.setIncense(look.burn, look.smoking);
+      applyIncenseLook(stage, liveLook(myStickStatus(sourceRef.current, Date.now())));
     };
     apply();
     const frame = requestAnimationFrame(apply);
@@ -56,7 +55,7 @@ export function useRoomIncense(stage: PlayStage, source: MyStickSource, active: 
   useEffect(
     () => () => {
       lightUpAt.current = null;
-      stage.setIncense(null, false);
+      applyIncenseLook(stage, PUT_AWAY);
     },
     [stage],
   );
@@ -70,8 +69,7 @@ export function useRoomIncense(stage: PlayStage, source: MyStickSource, active: 
       if (lightUpAt.current !== startedAt) return;
       const elapsed = performance.now() - startedAt;
       const status = myStickStatus(sourceRef.current, Date.now());
-      const look = lightUpLook(elapsed, status.kind === 'burning' ? status.progress : 0);
-      stage.setIncense(look.burn, look.smoking);
+      applyIncenseLook(stage, lightUpLook(elapsed, status.kind === 'burning' ? status.progress : 0));
       if (!ignited && elapsed >= LIGHT_UP_IGNITE_MS) {
         ignited = true;
         if (ambient.current) playSample('bell', { gain: 0.7 });
@@ -82,8 +80,7 @@ export function useRoomIncense(stage: PlayStage, source: MyStickSource, active: 
       else {
         lightUpAt.current = null;
         setLightingUp(false);
-        const live = liveLook(status);
-        stage.setIncense(live.burn, live.smoking);
+        applyIncenseLook(stage, liveLook(status));
       }
     };
     requestAnimationFrame(step);

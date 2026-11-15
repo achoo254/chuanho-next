@@ -10,22 +10,27 @@ describe('world actions', () => {
     expect(actionsForProp(undefined)).toEqual([]);
   });
 
-  it('send the censer to incense, the wooden fish to both drumming modes and the board to its three tools', () => {
+  it('send the censer to incense, the wooden fish to both drumming modes and the board to its four tools', () => {
     expect(actionsForProp('censer')).toEqual(['incense']);
     expect(actionsForProp('mo')).toEqual(['beat', 'endless']);
-    expect(actionsForProp('woodenBoard')).toEqual(['journal', 'gentle', 'radio']);
+    expect(actionsForProp('woodenBoard')).toEqual(['journal', 'gentle', 'fortune', 'radio']);
     expect(actionsForProp('woodenBoard').some(isComingSoon)).toBe(false);
     expect(isComingSoon('incense')).toBe(false);
   });
 
-  it('open the shared room; only the fortune is still coming soon', () => {
+  it('have nothing left coming soon: the room and the fortune both open', () => {
     expect(isComingSoon('room')).toBe(false);
-    expect(isComingSoon('fortune')).toBe(true);
+    expect(isComingSoon('fortune')).toBe(false);
+  });
+
+  it('put the fortune on the corner bar right after the gentle words', () => {
+    expect(SHORTCUT_BAR_ACTIONS.indexOf('fortune')).toBe(SHORTCUT_BAR_ACTIONS.indexOf('gentle') + 1);
   });
 
   it('find the prop behind each corner-bar action so it can glow', () => {
-    // Fortune and the room have no prop in the yard yet (a fortune tube and a lantern would be their props).
-    for (const action of SHORTCUT_BAR_ACTIONS.filter((a) => a !== 'fortune' && a !== 'room')) expect(propForAction(action)).not.toBeNull();
+    // The room has no prop in the yard yet (a lantern would be its prop).
+    for (const action of SHORTCUT_BAR_ACTIONS.filter((a) => a !== 'room')) expect(propForAction(action)).not.toBeNull();
+    expect(propForAction('fortune')).toBe('woodenBoard');
     expect(propForAction('strike')).toBe('mo');
   });
 });

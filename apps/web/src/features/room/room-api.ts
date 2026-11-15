@@ -98,6 +98,8 @@ export interface RoomApi {
   deleteWish(code: string, wishId: string): SnapshotCall;
   report(code: string, wishId: string): SnapshotCall;
   lock(code: string, locked: boolean): SnapshotCall;
+  /** Host only: removes another member (by their room id) from the room for good. */
+  removeMember(code: string, memberId: string): SnapshotCall;
 }
 
 /** The endpoints, bound to one fetch (the browser's by default, a fake in tests). */
@@ -115,6 +117,7 @@ export function roomApi(fetcher: Fetcher = (input, init) => fetch(input, init)):
     deleteWish: (code, wishId) => snapshot(wishPath(code, wishId), { method: 'DELETE' }),
     report: (code, wishId) => snapshot(`${wishPath(code, wishId)}/report`, post()),
     lock: (code, locked) => snapshot(`${base(code)}/lock`, post({ locked })),
+    removeMember: (code, memberId) => snapshot(`${base(code)}/members/${encodeURIComponent(memberId)}/remove`, post()),
   };
 }
 

@@ -5,9 +5,12 @@
  *
  * REST (all under `/api/rooms`, signed in): `POST /` create, `GET /:code` snapshot, `POST /:code/join`,
  * `POST /:code/leave`, `POST /:code/light`, `POST /:code/wishes` (RoomWishInput), `DELETE /:code/wishes/:id`
- * (host or author), `POST /:code/wishes/:id/report`, `POST /:code/lock` (host, RoomLockInput). Live updates:
- * `GET /:code/events` (server-sent events) sends `RoomSnapshot` as JSON in each message, and one `closed` event before
- * the server ends the stream for good (the room was deleted or the viewer is no longer in it).
+ * (host or author), `POST /:code/wishes/:id/report`, `POST /:code/lock` (host, RoomLockInput),
+ * `POST /:code/members/:id/remove` (host only, `:id` a member's room id; answers the host's snapshot). A removed member
+ * may not come back into that room (`removed`). Live updates: `GET /:code/events` (server-sent events) sends
+ * `RoomSnapshot` as JSON in each message, and one `closed` event before the server ends the stream for good (the room
+ * was deleted or the viewer is no longer in it); its data is a RoomClosedEvent (`{}`, or `{ "reason": "removed" }`
+ * when the host removed the viewer).
  */
 import { cleanText, isRecord } from './primitives';
 import { type WishRejection, checkWish } from './wish-filter';
@@ -126,6 +129,8 @@ export const parseRoomLockInput = (raw: unknown): RoomLockInput | null => {
 /**
  * Error codes the room API answers with (`{ error }`); `wish-rejected` and `invalid-room-name` also carry `reason` (a
  * WishRejection). `too-many-streams` refuses one more live event stream (per account or for the whole server).
+ * `removed` answers anyone the host removed from the room (they cannot see it or come back); `cannot-remove-self`
+ * refuses the host removing themself (leaving is the way out).
  */
 export const ROOM_ERRORS = [
   'room-not-found',
@@ -144,9 +149,31 @@ export const ROOM_ERRORS = [
   'own-wish',
   'invalid-room-name',
   'too-many-streams',
+  'cannot-remove-self',
+  'removed',
 ] as const;
 export type RoomErrorCode = (typeof ROOM_ERRORS)[number];
 export const isRoomErrorCode = (value: unknown): value is RoomErrorCode => (ROOM_ERRORS as readonly unknown[]).includes(value);
+
+/** Why a live stream was closed, when the viewer should be told more than "the room is over for you". */
+export type RoomClosedReason = 'removed';
+
+/** The data of the stream's `closed` event. */
+export interface RoomClosedEvent {
+  readonly reason?: RoomClosedReason;
+}
+
+/** Reads a `closed` event's data (text); anything unknown or malformed reads as a plain close (`{}`). */
+export function parseRoomClosedEvent(data: unknown): RoomClosedEvent {
+  if (typeof data !== 'string') return {};
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(data);
+  } catch {
+    return {};
+  }
+  return isRecord(parsed) && parsed.reason === 'removed' ? { reason: 'removed' } : {};
+}
 
 /** Burn state of one stick at `now`: how far it has burnt (0..1) and the minutes left, rounded up. */
 export function stickState(stick: { readonly litAt: number; readonly burnsOutAt: number }, now: number): { progress: number; minutesLeft: number; burntOut: boolean } {

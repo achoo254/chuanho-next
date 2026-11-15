@@ -24,9 +24,9 @@ class FakeSource implements EventSourceLike {
   onopen: ((event: Event) => void) | null = null;
   onmessage: ((event: MessageEvent) => void) | null = null;
   onerror: ((event: Event) => void) | null = null;
-  closedListener: (() => void) | null = null;
+  closedListener: ((event: MessageEvent) => void) | null = null;
   isClosed = false;
-  addEventListener(_type: 'closed', listener: () => void): void {
+  addEventListener(_type: 'closed', listener: (event: MessageEvent) => void): void {
     this.closedListener = listener;
   }
   close(): void {
@@ -152,7 +152,7 @@ describe('connectRoomLive', () => {
 
   it('ends on the closed event and when stopped', async () => {
     const stop = connectRoomLive(handlers, deps());
-    sources[0]?.closedListener?.();
+    sources[0]?.closedListener?.({ data: '{}' } as MessageEvent);
     expect(gone).toEqual([null]);
     expect(sources[0]?.isClosed).toBe(true);
     connectRoomLive(handlers, deps());
@@ -162,5 +162,17 @@ describe('connectRoomLive', () => {
     expect(sources[2]?.isClosed).toBe(true);
     await advance(STREAM_RETRY_MS * 2);
     expect(polls).toBe(0);
+  });
+
+  it('tells a removal apart on the closed event and on a poll', async () => {
+    connectRoomLive(handlers, deps());
+    sources[0]?.closedListener?.({ data: '{"reason":"removed"}' } as MessageEvent);
+    expect(gone).toEqual([{ kind: 'room', code: 'removed' }]);
+    expect(sources[0]?.isClosed).toBe(true);
+    connectRoomLive(handlers, deps(false));
+    pollAnswers = [{ ok: false, error: { kind: 'room', code: 'removed' } }];
+    await advance(POLL_MS * 3);
+    expect(gone).toEqual([{ kind: 'room', code: 'removed' }, { kind: 'room', code: 'removed' }]);
+    expect(polls).toBe(1);
   });
 });

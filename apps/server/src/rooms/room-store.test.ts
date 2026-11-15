@@ -80,6 +80,71 @@ describe('RoomStore', () => {
     expect(store.join(code, 'u-3', 'Chi').members).toHaveLength(3);
   });
 
+  it('lets only the host remove someone else, never themself', () => {
+    const { code, meId: hostId } = store.create('u-host', 'An', INPUT);
+    const guest = store.join(code, 'u-2', 'Bình');
+    const third = store.join(code, 'u-3', 'Chi');
+    expect(refusal(() => store.removeMember(code, 'u-2', third.meId))).toBe('not-allowed');
+    expect(refusal(() => store.removeMember(code, 'u-host', hostId))).toBe('cannot-remove-self');
+    expect(refusal(() => store.removeMember(code, 'u-host', 'id-unknown'))).toBe('not-member');
+    expect(refusal(() => store.removeMember(code, 'u-stranger', guest.meId))).toBe('not-member');
+    const { snapshot, removedUserId } = store.removeMember(code, 'u-host', guest.meId);
+    expect(removedUserId).toBe('u-2');
+    expect(snapshot.meId).toBe(hostId);
+    expect(snapshot.members.map((m) => m.name)).toEqual(['An', 'Chi']);
+    expect(logs.at(-1)).toBe('room member removed by host');
+  });
+
+  it('keeps a removed member stick in the count, drops their wishes and keeps them out for good', () => {
+    const { code } = store.create('u-host', 'An', INPUT);
+    const guest = store.join(code, 'u-2', 'Bình');
+    store.light(code, 'u-host');
+    store.light(code, 'u-2');
+    store.addWish(code, 'u-2', 'Cho sprint êm');
+    const kept = store.addWish(code, 'u-host', 'Deadline lùi giùm').wishes;
+    expect(kept).toHaveLength(2);
+    const after = store.removeMember(code, 'u-host', guest.meId).snapshot;
+    expect(after.litTotal).toBe(2);
+    expect(after.members.some((m) => m.id === guest.meId)).toBe(false);
+    expect(after.wishes.map((w) => w.memberId)).toEqual([after.meId]);
+    // Out of the room for every action, and back in neither directly, after leaving, nor once the room is unlocked.
+    expect(refusal(() => store.snapshot(code, 'u-2'))).toBe('removed');
+    expect(refusal(() => store.light(code, 'u-2'))).toBe('removed');
+    expect(refusal(() => store.leave(code, 'u-2'))).toBe('removed');
+    expect(refusal(() => store.join(code, 'u-2', 'Bình'))).toBe('removed');
+    store.setLocked(code, 'u-host', true);
+    expect(refusal(() => store.join(code, 'u-2', 'Bình'))).toBe('removed');
+    expect(refusal(() => store.join(code, 'u-3', 'Chi'))).toBe('room-locked');
+    store.setLocked(code, 'u-host', false);
+    expect(refusal(() => store.join(code, 'u-2', 'Bình'))).toBe('removed');
+    // Nobody else is affected, and the count never grows from the removal.
+    const third = store.join(code, 'u-3', 'Chi');
+    expect(third.litTotal).toBe(2);
+    expect(third.members.map((m) => m.name)).toEqual(['An', 'Chi']);
+  });
+
+  it('forgets who was removed once the room is deleted', () => {
+    const { code } = store.create('u-host', 'An', INPUT);
+    const guest = store.join(code, 'u-2', 'Bình');
+    store.removeMember(code, 'u-host', guest.meId);
+    store.leave(code, 'u-host');
+    expect(store.size).toBe(0);
+    expect(refusal(() => store.join(code, 'u-2', 'Bình'))).toBe('room-not-found');
+    const next = store.create('u-host', 'An', INPUT);
+    expect(store.join(next.code, 'u-2', 'Bình').members).toHaveLength(2);
+  });
+
+  it('turns to ashes when the removed member held the only stick still burning', () => {
+    const { code } = store.create('u-host', 'An', INPUT);
+    const guest = store.join(code, 'u-2', 'Bình');
+    store.light(code, 'u-host');
+    clock += 10 * MINUTE;
+    store.light(code, 'u-2');
+    clock += 25 * MINUTE;
+    expect(store.snapshot(code, 'u-host').status).toBe('open');
+    expect(store.removeMember(code, 'u-host', guest.meId).snapshot).toMatchObject({ status: 'ashes', litTotal: 2 });
+  });
+
   it('lights one stick per member that burns for the chosen minutes', () => {
     const { code } = store.create('u-host', 'An', INPUT);
     const lit = store.light(code, 'u-host');

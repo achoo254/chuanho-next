@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { EMPTY_RECORD, parseRoomGameRecord, withRound } from './room-game-best';
 import {
+  BURN_OUT_FADE_SHARE,
+  BURN_OUT_MIN_EMBER,
   FLAME_REACTION_MS,
+  FLICKER_EMBER,
   GREETING_BURN,
   INTRO_FULL_MS,
   INTRO_SHORT_MS,
+  LIGHT_UP_CATCH_MS,
   LIGHT_UP_IGNITE_MS,
+  LOW_FLAME_EMBER,
+  PUT_AWAY,
+  applyIncenseLook,
   gameLook,
   introDurationMs,
   introIgniteAtMs,
@@ -24,7 +31,7 @@ describe('room incense timeline', () => {
 
   it('shows unlit sticks while walking, then sweeps the burn up to the greeting offering', () => {
     const ignite = introIgniteAtMs(INTRO_FULL_MS);
-    expect(introLook(0, INTRO_FULL_MS, false)).toEqual({ burn: 0, smoking: false });
+    expect(introLook(0, INTRO_FULL_MS, false)).toEqual({ burn: 0, smoking: false, ember: 0 });
     const early = introLook(ignite + 50, INTRO_FULL_MS, false);
     const late = introLook(INTRO_FULL_MS, INTRO_FULL_MS, false);
     expect(early.smoking).toBe(true);
@@ -34,10 +41,10 @@ describe('room incense timeline', () => {
   });
 
   it('links the 3D sticks to the real stick', () => {
-    expect(liveLook({ kind: 'unlit' })).toEqual({ burn: 0, smoking: false });
-    expect(liveLook({ kind: 'burning', progress: 0.5 })).toEqual({ burn: 0.5, smoking: true });
+    expect(liveLook({ kind: 'unlit' })).toEqual({ burn: 0, smoking: false, ember: 0 });
+    expect(liveLook({ kind: 'burning', progress: 0.5 })).toEqual({ burn: 0.5, smoking: true, ember: 1 });
     expect(liveLook({ kind: 'burning', progress: 0 }).burn ?? 0).toBeGreaterThan(0);
-    expect(liveLook({ kind: 'burnt' }).burn).toBeNull();
+    expect(liveLook({ kind: 'burnt' })).toEqual(PUT_AWAY);
     expect(liveLook({ kind: 'outside' }).burn).toBe(GREETING_BURN);
   });
 
@@ -50,17 +57,43 @@ describe('room incense timeline', () => {
     expect(myStickStatus({ inRoom: true, stick, offset: 0 }, 11_000)).toEqual({ kind: 'burnt' });
   });
 
-  it('lights up after a beat', () => {
-    expect(lightUpLook(LIGHT_UP_IGNITE_MS - 1, 0.01).burn).toBe(0);
-    expect(lightUpLook(LIGHT_UP_IGNITE_MS, 0.3)).toEqual({ burn: 0.3, smoking: true });
+  it('fades the ember gently over the last stretch of the burn, never changing the length for it', () => {
+    const nearEnd = liveLook({ kind: 'burning', progress: 1 - BURN_OUT_FADE_SHARE / 2 });
+    expect(nearEnd.ember).toBeCloseTo(0.5);
+    expect(nearEnd.burn).toBeCloseTo(1 - BURN_OUT_FADE_SHARE / 2);
+    expect(liveLook({ kind: 'burning', progress: 0.9999 }).ember).toBe(BURN_OUT_MIN_EMBER);
   });
 
-  it('flickers on a gust that got through, flares on a shield, and calms on a low flame', () => {
-    expect(gameLook(0.3, 5, 'gusted', 10).burn).toBe(0);
-    expect(gameLook(0.3, 5, 'gusted', 130).burn).toBe(0.3);
-    expect(gameLook(0.3, 5, 'shielded', 10).smoking).toBe(true);
-    expect(gameLook(0.3, 2, 'shielded', FLAME_REACTION_MS).smoking).toBe(false);
-    expect(gameLook(0.3, 4, 'none', 0)).toEqual({ burn: 0.3, smoking: true });
+  it('lights up after a beat by the ember alone, at the real length of the stick', () => {
+    const dark = lightUpLook(LIGHT_UP_IGNITE_MS - 1, 0.3);
+    expect(dark).toEqual({ burn: 0.3, smoking: false, ember: 0 });
+    const catching = lightUpLook(LIGHT_UP_IGNITE_MS + LIGHT_UP_CATCH_MS / 2, 0.3);
+    expect(catching.burn).toBe(0.3);
+    expect(catching.ember).toBeCloseTo(0.5);
+    expect(lightUpLook(LIGHT_UP_IGNITE_MS + LIGHT_UP_CATCH_MS, 0.3)).toEqual({ burn: 0.3, smoking: true, ember: 1 });
+    // A stick lit a moment ago keeps the same length from the dark beat to the flame.
+    expect(lightUpLook(0, 0).burn).toBe(lightUpLook(LIGHT_UP_IGNITE_MS, 0).burn);
+  });
+
+  it('flickers dim on a gust that got through without changing the length, flares on a shield, and calms on a low flame', () => {
+    expect(gameLook(0.3, 5, 'gusted', 10)).toEqual({ burn: 0.3, smoking: false, ember: FLICKER_EMBER });
+    expect(gameLook(0.3, 5, 'gusted', 130)).toEqual({ burn: 0.3, smoking: false, ember: 1 });
+    expect(gameLook(0.3, 2, 'gusted', 130).ember).toBe(LOW_FLAME_EMBER);
+    expect(gameLook(0.3, 5, 'shielded', 10)).toEqual({ burn: 0.3, smoking: true, ember: 1 });
+    expect(gameLook(0.3, 2, 'shielded', FLAME_REACTION_MS)).toEqual({ burn: 0.3, smoking: false, ember: LOW_FLAME_EMBER });
+    expect(gameLook(0.3, 4, 'none', 0)).toEqual({ burn: 0.3, smoking: true, ember: 1 });
+    for (let since = 0; since < FLAME_REACTION_MS; since += 40) expect(gameLook(0.3, 5, 'gusted', since).burn).toBe(0.3);
+  });
+
+  it('hands the whole look to the stage', () => {
+    const calls: string[] = [];
+    const stage = {
+      setIncense: (burn: number | null, smoking: boolean): void => void calls.push(`incense ${String(burn)} ${String(smoking)}`),
+      setIncenseEmber: (level: number): void => void calls.push(`ember ${level}`),
+    };
+    applyIncenseLook(stage, { burn: 0.4, smoking: true, ember: 0.5 });
+    applyIncenseLook(stage, PUT_AWAY);
+    expect(calls).toEqual(['incense 0.4 true', 'ember 0.5', 'incense null false', 'ember 1']);
   });
 });
 

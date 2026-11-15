@@ -1,7 +1,7 @@
 import type { RoomSnapshot } from '@chuanho/contract';
 import { describe, expect, it } from 'vitest';
 import { INITIAL_ROOM_SESSION, roomSessionReducer } from './room-session-state';
-import { clockOffset, errorKey, roomView, wishFeedback } from './room-view-model';
+import { clockOffset, endsInLobby, errorKey, roomView, wishFeedback } from './room-view-model';
 
 const MINUTE = 60_000;
 
@@ -56,6 +56,16 @@ describe('roomView', () => {
     expect(view).toMatchObject({ status: 'ashes', wishes: [], canLight: false, minutesLeft: null, burning: 0 });
   });
 
+  it('offers the host, and only the host, to remove everyone but themself', () => {
+    expect(roomView(room(), 30 * MINUTE).members.every((member) => !member.canRemove)).toBe(true);
+    const asHost = roomView(room({ meId: 'm-host' }), 30 * MINUTE).members;
+    expect(asHost.map((member) => [member.id, member.canRemove])).toEqual([
+      ['m-host', false],
+      ['m-me', true],
+      ['m-3', true],
+    ]);
+  });
+
   it('measures the clock offset of a device', () => {
     expect(clockOffset(room({ serverNow: 5000 }), 3000)).toBe(2000);
   });
@@ -72,6 +82,15 @@ describe('wishFeedback and errorKey', () => {
     expect(errorKey({ kind: 'room', code: 'room-full' })).toBe('error.room-full');
     expect(errorKey({ kind: 'room', code: 'wish-rejected', reason: 'money' })).toBe('reason.money');
     expect(errorKey({ kind: 'offline' })).toBe('error.offline');
+    expect(errorKey({ kind: 'room', code: 'removed' })).toBe('error.removed');
+    expect(errorKey({ kind: 'room', code: 'cannot-remove-self' })).toBe('error.cannot-remove-self');
+  });
+
+  it('sends a removed player back to the lobby, like a lost session, but not a plain close', () => {
+    expect(endsInLobby({ kind: 'room', code: 'removed' })).toBe(true);
+    expect(endsInLobby({ kind: 'signed-out' })).toBe(true);
+    expect(endsInLobby({ kind: 'room', code: 'room-not-found' })).toBe(false);
+    expect(endsInLobby(null)).toBe(false);
   });
 });
 

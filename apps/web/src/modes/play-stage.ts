@@ -63,6 +63,8 @@ export interface PlayStage {
   popNote(noteIndex: number): void;
   /** Incense burn 0..1 (null puts the stick away) and whether it is being held. */
   setIncense(burn: number | null, holding: boolean): void;
+  /** How bright the incense ember glows, 0..1 (default 1): dims the flame and its smoke without changing the length. */
+  setIncenseEmber(level: number): void;
   setMoSkin(skin: MoSkinId): void;
   setProgress(progress: PlayerProgress): void;
   /** The player tapped a prop in the yard: the character looks over and says something. */
@@ -156,7 +158,10 @@ export async function createPlayStage(parts: StageParts): Promise<PlayStage> {
         view.setShot(look.shot);
         autonomy.summon(look.spot, look.pose);
       }
-      if (mode !== 'incense') incense?.setBurn(null);
+      if (mode !== 'incense') {
+        incense?.setBurn(null);
+        incense?.setEmberLevel(1);
+      }
       if (mode !== 'beat') orbs.setTrack(null);
     },
     strike() {
@@ -176,6 +181,9 @@ export async function createPlayStage(parts: StageParts): Promise<PlayStage> {
     setIncense(burn, holding) {
       incense?.setBurn(burn);
       incense?.setSmoking(holding);
+    },
+    setIncenseEmber(level) {
+      incense?.setEmberLevel(level);
     },
     setMoSkin(skin) {
       skins?.apply(skin);

@@ -8,7 +8,7 @@ khẩu nghiệp nhẹ nhàng không phán xét, và bật "Lofi Chùa Nhỏ" (nh
 Cam kết: không quảng cáo, không xin tiền, không bán đổi vận, không quà ảo quy đổi, không thay đi chùa thật.
 
 **Trạng thái:** chơi được vòng cốt lõi ở chế độ khách: thắp hương (giữ ngón tay), Mõ Beat (nốt rơi theo nhạc lofi tổng
-hợp bằng WebAudio, 3 độ khó, PERFECT ±60 ms, GOOD ±120 ms), Mõ vô cực (gõ tự do, gõ tự động, skin mõ), Tụng kinh (chữ
+hợp bằng WebAudio, 3 độ khó, PERFECT ±80 ms (vòng sáng nằm trọn trong vòng hoa sen), GOOD ±130 ms), Mõ vô cực (gõ tự do, gõ tự động, skin mõ), Tụng kinh (chữ
 sáng theo từng tiếng mõ), nhiệm vụ nhỏ trong ngày, thẻ chia sẻ 9:16 và điểm công đức lưu trong máy (một phiên đầy đủ mỗi
 ngày mới cộng điểm, chỉ để trang trí sân). Ngoài vòng chơi cốt lõi còn có: **Sổ khẩu nghiệp** (check-in, "mình đã nhịn", gỡ mây 3 bước), **Dịch sang tiếng hiền** (kho câu tĩnh), **Đài** (chế độ ngủ và làm việc), **Phòng giải nghiệp** (phòng theo mã, hương cháy theo giờ thật), đăng nhập một lần bấm kèm đồng bộ hai chiều và chip **Giờ Tĩnh 22:30**. Tính năng cần server (phòng, đồng bộ, Giờ Tĩnh) chỉ chạy khi `apps/server` được deploy; chưa có server thì app coi người chơi là khách. Chưa làm: xin xăm, tiểu sa di Tiểu Đệ, phần sản xuất trên PC của Đài. Khách vẫn chơi đầy đủ, không cần server.
 

@@ -1,10 +1,10 @@
 /**
  * Keeps a room screen up to date: server-sent events first (the browser reconnects them by itself), and polling the
  * snapshot every few seconds whenever the stream is down or not supported, until the stream is back. A `closed` event
- * or a poll answering that the room is gone ends it. Framework-free, with the browser parts injected so the switching
+ * or a poll answering that the room is gone (or that the host removed the viewer) ends it. Framework-free, with the browser parts injected so the switching
  * is tested on fakes.
  */
-import type { RoomSnapshot } from '@chuanho/contract';
+import { type RoomSnapshot, parseRoomClosedEvent } from '@chuanho/contract';
 import { type RoomApiError, type RoomApiResult, isRoomSnapshot } from './room-api';
 
 export const POLL_MS = 5_000;
@@ -19,14 +19,14 @@ export interface EventSourceLike {
   onopen: ((event: Event) => void) | null;
   onmessage: ((event: MessageEvent) => void) | null;
   onerror: ((event: Event) => void) | null;
-  addEventListener(type: 'closed', listener: () => void): void;
+  addEventListener(type: 'closed', listener: (event: MessageEvent) => void): void;
   close(): void;
 }
 
 export interface LiveHandlers {
   onSnapshot(snapshot: RoomSnapshot): void;
   onMode(mode: LiveMode): void;
-  /** The room is over for this viewer: deleted, left from elsewhere, or signed out. */
+  /** The room is over for this viewer: deleted, left from elsewhere, removed by the host (`removed`), or signed out. */
   onGone(error: RoomApiError | null): void;
 }
 
@@ -42,7 +42,7 @@ const EVENT_SOURCE_CLOSED = 2;
 
 /** Errors after which polling stops: the room will not come back for this viewer. */
 function isFinal(error: RoomApiError): boolean {
-  return error.kind === 'signed-out' || (error.kind === 'room' && (error.code === 'room-not-found' || error.code === 'not-member'));
+  return error.kind === 'signed-out' || (error.kind === 'room' && (error.code === 'room-not-found' || error.code === 'not-member' || error.code === 'removed'));
 }
 
 /** Starts following a room; returns the function that stops (call it when the screen closes). */
@@ -109,7 +109,10 @@ export function connectRoomLive(handlers: LiveHandlers, deps: LiveDeps): () => v
       if (isRoomSnapshot(data)) handlers.onSnapshot(data);
       else console.warn('Room event without a snapshot, ignored');
     };
-    stream.addEventListener('closed', () => finish(null));
+    stream.addEventListener('closed', (event) => {
+      const { reason } = parseRoomClosedEvent(event.data);
+      finish(reason === 'removed' ? { kind: 'room', code: 'removed' } : null);
+    });
     stream.onerror = () => {
       if (stopped) return;
       if (stream.readyState === EVENT_SOURCE_CLOSED) {

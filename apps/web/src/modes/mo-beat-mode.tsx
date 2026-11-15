@@ -6,14 +6,17 @@
  * cards with AI-drawn lotus art. Every word stays real text; the art only decorates.
  */
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLibrarySong } from '../audio/beatmap-library-song-player';
+import { buildLibraryChart } from '../game/beat-library-song';
 import { type Difficulty, generateBeatChart } from '../game/beat-pattern';
 import { useGameSession } from '../game/game-session-context';
 import type { RhythmState, TapOutcome } from '../game/rhythm-judge';
 import { useI18n } from '../i18n/i18n';
 import { useRhythmSong } from '../audio/use-rhythm-song';
-import { BeatLevelCard, BeatResults } from './beat-cards';
+import { type BeatSongSource, BeatLevelCard, BeatResults } from './beat-cards';
 import { BeatCombo, BeatHud, BeatPulse } from './beat-hud';
 import { BeatJudgementAnchor, useBeatJudgement } from './beat-judgement';
+import { useBeatLibraryChoice } from './beat-library-choice';
 import { type BeatPreview, useBeatPreview } from './beat-preview';
 import { ModeBar, type PlayModeProps, StepDoneCard, StrikeTapLayer, useRegisterStrike } from './mode-chrome';
 import { playStrikeFeedback } from './strike-feedback';
@@ -23,7 +26,14 @@ export function MoBeatMode(props: PlayModeProps & { readonly previewSongMs: numb
   const { t } = useI18n();
   const { completeStep, recordCombo } = useGameSession();
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
-  const chart = useMemo(() => generateBeatChart(difficulty), [difficulty]);
+  const [source, setSource] = useState<BeatSongSource>('library');
+  const builtInChart = useMemo(() => generateBeatChart(difficulty), [difficulty]);
+  const library = useBeatLibraryChoice(previewSongMs === null);
+  const librarySong = library.song;
+  const libraryChart = useMemo(
+    () => (librarySong ? buildLibraryChart(librarySong.beatmap, difficulty, librarySong.durationMs) : null),
+    [librarySong, difficulty],
+  );
   const judgement = useBeatJudgement();
 
   const onFinish = useCallback(
@@ -33,8 +43,34 @@ export function MoBeatMode(props: PlayModeProps & { readonly previewSongMs: numb
     },
     [recordCombo, completeStep, onSessionComplete],
   );
-  const live = useRhythmSong(chart, onFinish);
-  const preview: BeatPreview | null = useBeatPreview(chart, previewSongMs);
+  const { markPlayed, drop } = library;
+  const onLibraryFinish = useCallback(
+    (final: RhythmState): void => {
+      markPlayed();
+      onFinish(final);
+    },
+    [markPlayed, onFinish],
+  );
+  const builtIn = useRhythmSong(builtInChart, onFinish);
+  // A library song that cannot play: the built-in song plays in its place right away (a broken track is left out).
+  const startBuiltIn = builtIn.start;
+  const onLibraryUnavailable = useCallback(
+    (trackFailed: boolean): void => {
+      if (trackFailed) drop();
+      setSource('builtIn');
+      startBuiltIn();
+    },
+    [drop, startBuiltIn],
+  );
+  const librarySongPlayer = useLibrarySong(libraryChart, librarySong?.src ?? null, onLibraryFinish, onLibraryUnavailable);
+
+  // The library song is offered once one is ready; the one playing or showing results stays in charge.
+  const libraryOffered = libraryChart !== null && previewSongMs === null;
+  const libraryActive = librarySongPlayer.phase !== 'idle' || librarySongPlayer.loading;
+  const libraryInCharge = libraryActive || (libraryOffered && source === 'library' && builtIn.phase === 'idle');
+  const live = libraryInCharge ? librarySongPlayer : builtIn;
+  const chart = libraryInCharge && libraryChart ? libraryChart : builtInChart;
+  const preview: BeatPreview | null = useBeatPreview(builtInChart, previewSongMs);
   const song = preview ?? live;
   const stateRef = useRef(song.state);
   useEffect(() => {
@@ -80,7 +116,16 @@ export function MoBeatMode(props: PlayModeProps & { readonly previewSongMs: numb
       {playing && <BeatCombo combo={state.combo} />}
       <ModeBar onBack={onBack}>{playing && <BeatHud state={state} onQuit={live.stop} />}</ModeBar>
 
-      {song.phase === 'idle' && <BeatLevelCard difficulty={difficulty} onPick={setDifficulty} onStart={live.start} />}
+      {song.phase === 'idle' && (
+        <BeatLevelCard
+          difficulty={difficulty}
+          onPick={setDifficulty}
+          onStart={live.start}
+          source={libraryOffered ? source : null}
+          onSource={setSource}
+          loading={librarySongPlayer.loading}
+        />
+      )}
 
       {song.phase === 'finished' && (
         <StepDoneCard title={t('beat.results')} onOpen={onOpen} onBack={onBack}>

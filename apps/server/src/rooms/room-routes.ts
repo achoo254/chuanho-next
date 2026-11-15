@@ -41,6 +41,8 @@ const STATUS: Readonly<Record<RoomErrorCode, number>> = {
   'own-wish': 409,
   'invalid-room-name': 422,
   'too-many-streams': 429,
+  'cannot-remove-self': 409,
+  removed: 403,
 };
 
 export const newRoomCode = (): string => Array.from({ length: ROOM_CODE_LENGTH }, () => ROOM_CODE_ALPHABET.charAt(randomInt(ROOM_CODE_ALPHABET.length))).join('');
@@ -54,6 +56,13 @@ function codeOf(req: Request): string {
 function wishIdOf(req: Request): string {
   const raw = req.params.wishId;
   if (typeof raw !== 'string' || raw.length > 64) throw new RoomError('wish-not-found');
+  return raw;
+}
+
+/** A member's room id in the path; an impossible one is answered like someone not in the room. */
+function memberIdOf(req: Request): string {
+  const raw = req.params.memberId;
+  if (typeof raw !== 'string' || raw.length === 0 || raw.length > 64) throw new RoomError('not-member');
   return raw;
 }
 
@@ -162,6 +171,14 @@ export function roomRoutes(deps: RouteDeps): Router {
     if (!input) throw new HttpError(400, 'invalid-body');
     const code = codeOf(req);
     changed(res, code, store.setLocked(code, signedInUserId(res), input.locked));
+  });
+
+  router.post('/api/rooms/:code/members/:memberId/remove', ...writes, (req, res) => {
+    const code = codeOf(req);
+    const { snapshot, removedUserId } = store.removeMember(code, signedInUserId(res), memberIdOf(req));
+    // The removed member's streams end with the reason before everyone else gets the change.
+    hub.closeViewer(code, removedUserId, 'removed');
+    changed(res, code, snapshot);
   });
 
   // Room refusals as `{ error }` (and the filter's reason); anything else goes on to the app's handler.

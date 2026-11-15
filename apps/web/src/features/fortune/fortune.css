@@ -1,0 +1,185 @@
+/* "Xin xăm": the stick tube and its rattle, and the paper slip. Only what panel.css and the buttons do not cover.
+   Colours only from tokens.css; motion keyed on data-phase so reduced motion is one block at the end. */
+
+.fortune-stack {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: center;
+  text-align: center;
+}
+.fortune-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.fortune-shake-btn {
+  min-width: 200px;
+}
+.fortune-again {
+  color: var(--c-primary);
+  text-align: center;
+}
+
+/* The tube. */
+.fortune-tube svg {
+  display: block;
+  overflow: visible;
+}
+.fortune-tube-shadow {
+  fill: var(--c-drop-shadow);
+}
+.fortune-tube-shell {
+  fill: var(--c-scene-lacquer);
+  stroke: var(--c-bronze);
+  stroke-width: 2;
+}
+.fortune-tube-rim {
+  fill: var(--c-scene-wood);
+  stroke: var(--c-bronze);
+  stroke-width: 2;
+}
+.fortune-tube-band {
+  fill: var(--c-primary);
+}
+.fortune-tube-seal {
+  fill: var(--c-primary);
+  stroke: var(--c-bronze);
+  stroke-width: 2;
+}
+.fortune-stick {
+  fill: var(--c-scene-wood);
+  stroke: var(--c-bronze);
+  stroke-width: 1;
+}
+.fortune-stick-tip {
+  fill: var(--c-scene-lacquer);
+}
+.fortune-stick-number {
+  fill: var(--c-paper-ink);
+  font-size: 9px;
+  font-weight: 800;
+}
+.fortune-tube-body {
+  transform-box: fill-box;
+  transform-origin: 50% 90%;
+}
+.fortune-stick-out {
+  transform: translateY(8px);
+  transition: transform var(--dur-base) var(--ease-standard);
+}
+
+.fortune-tube[data-phase='shaking'] .fortune-tube-body {
+  animation: fortune-rattle 0.26s ease-in-out infinite;
+}
+.fortune-tube[data-phase='shaking'] .fortune-tube-sticks {
+  animation: fortune-jiggle 0.13s linear infinite;
+}
+.fortune-tube[data-phase='out'] .fortune-stick-out {
+  transform: translateY(-46px) rotate(-8deg);
+  transition-duration: 0.5s;
+}
+.fortune-tube[data-phase='out'] .fortune-stick-chosen {
+  fill: var(--c-paper);
+}
+
+@keyframes fortune-rattle {
+  0%,
+  100% {
+    transform: rotate(-11deg);
+  }
+  50% {
+    transform: rotate(11deg) translateY(-3px);
+  }
+}
+@keyframes fortune-jiggle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* The slip. */
+.fortune-card {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 2px solid var(--c-paper-edge);
+  border-radius: var(--radius-md);
+  background: var(--c-paper);
+  color: var(--c-paper-ink);
+  text-align: center;
+  animation: fortune-unfold var(--dur-pop) var(--ease-standard) both;
+}
+.fortune-card p,
+.fortune-card h3 {
+  margin: 0;
+}
+.fortune-card-number,
+.fortune-card-label {
+  color: var(--c-paper-ink-dim);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.fortune-card-title {
+  color: var(--c-paper-lit);
+  font-size: 22px;
+  font-weight: 800;
+}
+.fortune-card-verse {
+  font-size: 16px;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.fortune-card-part {
+  display: grid;
+  gap: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px dashed var(--c-paper-edge);
+}
+.fortune-card-text {
+  font-size: 15px;
+  line-height: 1.5;
+  user-select: text;
+}
+.fortune-card-notice {
+  min-height: 1em;
+  color: var(--c-paper-ink-dim);
+  font-size: 13px;
+}
+
+@keyframes fortune-unfold {
+  from {
+    opacity: 0;
+    transform: scaleY(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fortune-tube[data-phase='shaking'] .fortune-tube-body,
+  .fortune-tube[data-phase='shaking'] .fortune-tube-sticks {
+    animation: none;
+  }
+  .fortune-stick-out,
+  .fortune-tube[data-phase='out'] .fortune-stick-out {
+    transition: none;
+  }
+  .fortune-card {
+    animation: fortune-fade var(--dur-base) linear both;
+  }
+}
+@keyframes fortune-fade {
+  from {
+    opacity: 0;
+  }
+}

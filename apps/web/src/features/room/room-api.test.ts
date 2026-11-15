@@ -51,6 +51,18 @@ describe('roomApi', () => {
     const offline: Fetcher = () => Promise.reject(new TypeError('Failed to fetch'));
     expect(await roomApi(offline).join('ABC234')).toEqual({ ok: false, error: { kind: 'offline' } });
     expect(await roomApi(fakeFetch(204).fetcher).leave('ABC234')).toEqual({ ok: true, value: undefined });
+    expect(await roomApi(fakeFetch(403, { error: 'removed' }).fetcher).join('ABC234')).toEqual({ ok: false, error: { kind: 'room', code: 'removed' } });
+  });
+
+  it('asks the server to remove a member by their room id', async () => {
+    const { fetcher, calls } = fakeFetch(200, SNAPSHOT);
+    expect(await roomApi(fetcher).removeMember('ABC234', 'm 2/x')).toEqual({ ok: true, value: SNAPSHOT });
+    expect(calls[0]?.path).toBe('/api/rooms/ABC234/members/m%202%2Fx/remove');
+    expect(calls[0]?.init?.method).toBe('POST');
+    expect(await roomApi(fakeFetch(409, { error: 'cannot-remove-self' }).fetcher).removeMember('ABC234', 'm1')).toEqual({
+      ok: false,
+      error: { kind: 'room', code: 'cannot-remove-self' },
+    });
   });
 });
 

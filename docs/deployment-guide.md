@@ -95,6 +95,11 @@ curl -sI https://chuanho.hoandat.com/media/music/manifest.json      # 200, appli
 curl -s -o /dev/null -w '%{http_code} %{content_type}\n' -r 0-1023 https://chuanho.hoandat.com/media/music/<file>.mp3   # 206 audio/mpeg
 ```
 
+**Beatmap cho Mõ Beat** nằm ở `/var/www/chuanho/media/music/beatmaps/` (`index.json` và `<mã bài>.json`), sinh bằng
+`tools/chuanho-beatmap` (xem README của công cụ) rồi gửi cùng thư viện bằng `infra/upload-music.sh` (script gửi bản nhạc,
+rồi beatmap, rồi `index.json`, `manifest.json` sau cùng). Nginx trả beatmap với `Cache-Control: no-cache` (tên file giữ nguyên khi
+sinh lại). Thiếu beatmap thì Mõ Beat chơi nhịp lofi tổng hợp như trước.
+
 Thiếu thư viện (máy chủ mới, mất mạng, chạy `pnpm dev`) thì game tự phát vòng nhạc `pad-loop.mp3` có sẵn trong bản phát
 hành. Build có thể trỏ nơi khác bằng `VITE_MUSIC_BASE` (kết thúc bằng `/`).
 

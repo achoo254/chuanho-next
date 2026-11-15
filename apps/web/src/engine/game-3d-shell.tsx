@@ -8,6 +8,7 @@ import { audioEngine, playSample, unlockAudio } from '../audio/audio-engine';
 import { useLofiBackdrop } from '../audio/use-lofi-backdrop';
 import { brand } from '../brand';
 import { NoWebglFallback } from '../fallback/no-webgl-fallback';
+import { TieuDeNudge } from '../features/tieude/tieude-nudge';
 import { useGameSession } from '../game/game-session-context';
 import { ActionToast, type HoverHint, PropHoverHint, type ToastContent } from '../hud/action-toast';
 import { CharacterBubble } from '../hud/character-bubble';
@@ -241,6 +242,7 @@ export function Game3dShell(): ReactNode {
             />
           )}
           {started && <CharacterBubble stage={world.stage} visible={mode === 'yard' && !infoOpen} />}
+          {started && <TieuDeNudge visible={mode === 'yard' && !infoOpen} />}
           <ActionToast toast={toast} onChoose={(action) => runAction(action)} />
           <PropHoverHint hint={started && mode === 'yard' ? hint : null} />
           {!started && <StartOverlay onStart={start} />}

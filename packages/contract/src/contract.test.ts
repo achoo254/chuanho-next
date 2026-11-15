@@ -12,6 +12,7 @@ import {
   msUntilQuietHour,
   parseJournalEntry,
   parseQuietHourBeatsInput,
+  parseRoomClosedEvent,
   parseRoomCreateInput,
   parseRoomLockInput,
   parseSyncRequest,
@@ -179,6 +180,16 @@ describe('rooms', () => {
     expect(isRoomErrorCode('room-full')).toBe(true);
     expect(isRoomErrorCode('invalid-room-name')).toBe(true);
     expect(isRoomErrorCode('internal')).toBe(false);
+    expect(isRoomErrorCode('removed')).toBe(true);
+    expect(isRoomErrorCode('cannot-remove-self')).toBe(true);
+  });
+
+  it('reads the closed event, anything unknown as a plain close', () => {
+    expect(parseRoomClosedEvent('{"reason":"removed"}')).toEqual({ reason: 'removed' });
+    expect(parseRoomClosedEvent('{}')).toEqual({});
+    expect(parseRoomClosedEvent('{"reason":"kicked"}')).toEqual({});
+    expect(parseRoomClosedEvent('not json')).toEqual({});
+    expect(parseRoomClosedEvent(undefined)).toEqual({});
   });
 });
 

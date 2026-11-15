@@ -1,7 +1,7 @@
 /** The event hub with fake sinks and fake timers: coalescing, one shared serialization, stream caps, slow clients. */
 import type { RoomSnapshot } from '@chuanho/contract';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CLOSED_EVENT, type EventSink, RoomEventHub, viewerEvent } from './room-event-hub';
+import { CLOSED_EVENT, type EventSink, RoomEventHub, closedEvent, viewerEvent } from './room-event-hub';
 import { RoomError, type SharedRoomSnapshot, type ViewerFields } from './room-model';
 import type { RoomStreamView } from './room-store';
 
@@ -97,6 +97,23 @@ describe('RoomEventHub', () => {
     expect(hub.size).toBe(0);
     vi.advanceTimersByTime(250);
     expect(one.chunks.filter((chunk) => chunk === CLOSED_EVENT)).toHaveLength(1);
+  });
+
+  it('closes every stream of a removed viewer with the reason, and only theirs', () => {
+    const mine = new FakeSink();
+    const tab = new FakeSink();
+    const other = new FakeSink();
+    hub.open('ROOM22', 'u-2', tab, FIRST);
+    hub.open('ROOM22', 'u-2', mine, FIRST);
+    hub.open('ROOM22', 'u-1', other, FIRST);
+    hub.closeViewer('ROOM22', 'u-2', 'removed');
+    for (const sink of [mine, tab]) {
+      expect(sink.chunks.at(-1)).toBe(closedEvent('removed'));
+      expect(sink.ended).toBe(true);
+    }
+    expect(closedEvent('removed')).toBe('event: closed\ndata: {"reason":"removed"}\n\n');
+    expect(other.ended).toBe(false);
+    expect(hub.size).toBe(1);
   });
 
   it('caps streams per account and for the server, and frees a slot when a stream goes', () => {

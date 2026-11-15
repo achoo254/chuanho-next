@@ -1,0 +1,10 @@
+/* Mõ Beat's song choice on the level card: two plain tiles above the levels, styled like them (play-modes.css). */
+.beat-sources {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+  width: 100%;
+}
+.beat-source {
+  align-content: center;
+}

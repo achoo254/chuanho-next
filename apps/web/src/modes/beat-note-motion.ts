@@ -4,6 +4,7 @@
  * lanterns instead of lotuses), the ring that closes in on the wooden fish as a note arrives, the comet tail behind
  * a flying note, and the petals and sparkles that burst out of a hit.
  */
+import { PERFECT_WINDOW_MS } from '../game/grade-tap';
 
 /** How long after each beat the pulse takes to fade, as a share of one beat. */
 const PULSE_DECAY = 0.22;
@@ -28,7 +29,11 @@ export const APPROACH_MS = 520;
 export function approachRing(aheadMs: number): { scale: number; alpha: number } {
   if (!Number.isFinite(aheadMs) || aheadMs > APPROACH_MS || aheadMs < 0) return { scale: 1, alpha: 0 };
   const t = 1 - aheadMs / APPROACH_MS;
-  return { scale: 1 + (1 - t) * 0.9, alpha: Math.min(1, t * 1.6) * 0.6 };
+  // Inside the PERFECT window the ring sits exactly on the halo and glows brighter: tapping while it is inside the
+  // circle is the high score. Before that it closes in from wide and faint.
+  if (aheadMs <= PERFECT_WINDOW_MS) return { scale: 1, alpha: 0.9 };
+  const closing = (aheadMs - PERFECT_WINDOW_MS) / (APPROACH_MS - PERFECT_WINDOW_MS);
+  return { scale: 1 + closing * 0.9, alpha: Math.min(1, t * 1.6) * 0.6 };
 }
 
 /** The comet tail: how far back along the path each trailing sparkle sits (in flight progress) and how big it is. */

@@ -17,12 +17,12 @@ describe('routeActions', () => {
     expect(routeActions(PROP_ACTIONS.bowl)).toEqual({ kind: 'sound', sample: 'bowl' });
   });
 
-  it('offers the journal, the gentle-words tool and the radio from the board', () => {
-    expect(routeActions(PROP_ACTIONS.woodenBoard)).toEqual({ kind: 'choose', actions: ['journal', 'gentle', 'radio'] });
+  it('offers the journal, the gentle-words tool, the fortune and the radio from the board', () => {
+    expect(routeActions(PROP_ACTIONS.woodenBoard)).toEqual({ kind: 'choose', actions: ['journal', 'gentle', 'fortune', 'radio'] });
   });
 
-  it('keeps what needs the server as coming soon', () => {
-    expect(routeActions(['fortune'])).toEqual({ kind: 'soon', actions: ['fortune'] });
+  it('opens the fortune and the room straight from their shortcuts', () => {
+    expect(routeActions(['fortune'])).toEqual({ kind: 'enter', mode: 'fortune' });
     expect(routeActions(['room'])).toEqual({ kind: 'enter', mode: 'room' });
   });
 
@@ -39,6 +39,7 @@ describe('modeForAction', () => {
     expect(modeForAction('incense')).toBe('incense');
     expect(modeForAction('bell')).toBeNull();
     expect(modeForAction('radio')).toBe('radio');
+    expect(modeForAction('fortune')).toBe('fortune');
   });
 });
 

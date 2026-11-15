@@ -16,14 +16,14 @@ export const PROP_ACTIONS: Readonly<Record<InteractivePropId, readonly WorldActi
   mo: ['beat', 'endless'],
   bell: ['bell'],
   bowl: ['bowl'],
-  woodenBoard: ['journal', 'gentle', 'radio'],
+  woodenBoard: ['journal', 'gentle', 'fortune', 'radio'],
 };
 
 /** Actions whose screens do not exist yet: they show a "coming soon" mark instead. */
-const COMING_SOON: ReadonlySet<WorldAction> = new Set<WorldAction>(['fortune']);
+const COMING_SOON: ReadonlySet<WorldAction> = new Set<WorldAction>([]);
 
 /** The corner icon bar: every action reachable without aiming at the scene. */
-export const SHORTCUT_BAR_ACTIONS: readonly WorldAction[] = ['incense', 'beat', 'sutra', 'journal', 'gentle', 'radio', 'room'];
+export const SHORTCUT_BAR_ACTIONS: readonly WorldAction[] = ['incense', 'beat', 'sutra', 'journal', 'gentle', 'fortune', 'radio', 'room'];
 
 /** Number keys 1–3 pick the three steps of a session, in order. */
 export const NUMBER_KEY_ACTIONS: readonly WorldAction[] = ['incense', 'beat', 'sutra'];

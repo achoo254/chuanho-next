@@ -1,7 +1,7 @@
 /**
  * "Hộ hương" (guard the incense), full screen over the 3D yard with the censer still in view: gusts sweep in from the
  * left or right (room-game-wind.tsx) and a tap on that half of the screen (or ← →) shields the flame. PERFECT and
- * GOOD pop up like in Mõ Beat, the 3D ember flares on a shield and flickers when a gust gets through, the character
+ * GOOD pop up like in Mõ Beat, the 3D ember flares on a shield and flickers dim when a gust gets through, the character
  * reacts. Esc and the back button leave the overlay only, never the room.
  */
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -16,7 +16,7 @@ import { type RoomGameRecord, readRoomGameRecord, saveRoomGameRound } from './ro
 import { RoomGameReadyCard, RoomGameResultCard } from './room-game-cards';
 import { useRoomGameText } from './room-game-messages';
 import { RoomGameWind } from './room-game-wind';
-import { type FlameReaction, gameLook } from './room-incense-timeline';
+import { type FlameReaction, applyIncenseLook, gameLook } from './room-incense-timeline';
 import { useGustGame } from './use-gust-game';
 import './room-game.css';
 
@@ -82,8 +82,7 @@ export function RoomGameOverlay({ stage, seed, practice, baseBurn, onClose }: Ro
   useEffect(() => {
     let frame = 0;
     const draw = (): void => {
-      const look = gameLook(baseBurn(), flame.current, reaction.current.kind, performance.now() - reaction.current.at);
-      stage.setIncense(look.burn, look.smoking);
+      applyIncenseLook(stage, gameLook(baseBurn(), flame.current, reaction.current.kind, performance.now() - reaction.current.at));
       frame = requestAnimationFrame(draw);
     };
     frame = requestAnimationFrame(draw);

@@ -48,12 +48,13 @@ async function createRoom(): Promise<RoomSnapshot> {
 }
 
 /** Reads server-sent events from a stream until `count` snapshots (or a `closed` event) arrived. */
-async function readEvents(body: ReadableStream<Uint8Array>, count: number): Promise<{ snapshots: RoomSnapshot[]; closed: boolean }> {
+async function readEvents(body: ReadableStream<Uint8Array>, count: number): Promise<{ snapshots: RoomSnapshot[]; closed: boolean; closedData: unknown }> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   const snapshots: RoomSnapshot[] = [];
   let buffer = '';
   let closed = false;
+  let closedData: unknown = null;
   while (snapshots.length < count && !closed) {
     const { value, done } = await reader.read();
     if (done) break;
@@ -62,13 +63,17 @@ async function readEvents(body: ReadableStream<Uint8Array>, count: number): Prom
     while (end >= 0) {
       const block = buffer.slice(0, end);
       buffer = buffer.slice(end + 2);
-      if (block.startsWith('event: closed')) closed = true;
+      if (block.startsWith('event: closed')) {
+        closed = true;
+        const data = block.split('\n').find((line) => line.startsWith('data: '));
+        closedData = data ? JSON.parse(data.slice(6)) : null;
+      }
       else if (block.startsWith('data: ')) snapshots.push(JSON.parse(block.slice(6)) as RoomSnapshot);
       end = buffer.indexOf('\n\n');
     }
   }
   reader.releaseLock();
-  return { snapshots, closed };
+  return { snapshots, closed, closedData };
 }
 
 describe('room routes', () => {
@@ -148,6 +153,51 @@ describe('room routes', () => {
     } finally {
       abort.abort();
     }
+  });
+
+  it('let only the host remove a member, never themself', async () => {
+    const room = await createRoom();
+    const joined = await snapshotOf(await post(`/api/rooms/${room.code}/join`, guest));
+    const forbidden = await post(`/api/rooms/${room.code}/members/${room.meId}/remove`, guest);
+    expect(forbidden.status).toBe(403);
+    expect(await forbidden.json()).toEqual({ error: 'not-allowed' });
+    const self = await post(`/api/rooms/${room.code}/members/${room.meId}/remove`, host);
+    expect(self.status).toBe(409);
+    expect(await self.json()).toEqual({ error: 'cannot-remove-self' });
+    expect(await (await post(`/api/rooms/${room.code}/members/nobody/remove`, host)).json()).toEqual({ error: 'not-member' });
+    const stillThere = await snapshotOf(await api(server, `/api/rooms/${room.code}`, { cookie: guest }));
+    expect(stillThere.meId).toBe(joined.meId);
+  });
+
+  it('remove a member: their wishes go, their stick stays counted, their stream closes and they stay out', async () => {
+    const room = await createRoom();
+    const joined = await snapshotOf(await post(`/api/rooms/${room.code}/join`, guest));
+    await post(`/api/rooms/${room.code}/light`, guest);
+    await post(`/api/rooms/${room.code}/wishes`, guest, { text: 'Cho sprint này êm' });
+    const abort = new AbortController();
+    const stream = await fetch(`${server.origin}/api/rooms/${room.code}/events`, { headers: { cookie: guest }, signal: abort.signal });
+    try {
+      if (!stream.body) throw new Error('no body');
+      const reading = readEvents(stream.body, 5);
+      const after = await snapshotOf(await post(`/api/rooms/${room.code}/members/${joined.meId}/remove`, host));
+      expect(after.members.map((m) => m.name)).toEqual(['An']);
+      expect(after.wishes).toEqual([]);
+      expect(after.litTotal).toBe(1);
+      const events = await reading;
+      expect(events.closed).toBe(true);
+      expect(events.closedData).toEqual({ reason: 'removed' });
+    } finally {
+      abort.abort();
+    }
+    for (const attempt of [api(server, `/api/rooms/${room.code}`, { cookie: guest }), post(`/api/rooms/${room.code}/join`, guest)]) {
+      const res = await attempt;
+      expect(res.status).toBe(403);
+      expect(await res.json()).toEqual({ error: 'removed' });
+    }
+    const refusedStream = await fetch(`${server.origin}/api/rooms/${room.code}/events`, { headers: { cookie: guest } });
+    expect(refusedStream.status).toBe(403);
+    expect(await refusedStream.json()).toEqual({ error: 'removed' });
+    expect((await snapshotOf(await api(server, `/api/rooms/${room.code}`, { cookie: host }))).litTotal).toBe(1);
   });
 
   it('cap the live streams of one account', async () => {

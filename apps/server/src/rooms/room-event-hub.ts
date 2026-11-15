@@ -2,10 +2,11 @@
  * Live room updates over server-sent events: each open stream belongs to one member of one room. Changes to a room are
  * coalesced (one push per COALESCE_MS at most), and each push serializes the shared part of the snapshot once and adds
  * only `meId` / `myReportedWishId` per stream. A comment line every 25 s keeps proxies from closing an idle stream; a
- * deleted room (or a member who left) gets one `closed` event before its streams end. A stream whose client stops
+ * deleted room (or a member who left) gets one `closed` event before its streams end; a member the host removed gets
+ * it with the reason. A stream whose client stops
  * reading is dropped instead of buffering without bound. Plain HTTP that nginx passes through.
  */
-import type { RoomSnapshot } from '@chuanho/contract';
+import type { RoomClosedReason, RoomSnapshot } from '@chuanho/contract';
 import { RoomError, type ViewerFields } from './room-model';
 import type { RoomStreamView } from './room-store';
 
@@ -47,6 +48,8 @@ export const snapshotEvent = (snapshot: RoomSnapshot): string => `data: ${JSON.s
 export const viewerEvent = (sharedHead: string, fields: ViewerFields): string =>
   `data: ${sharedHead},"meId":${JSON.stringify(fields.meId)},"myReportedWishId":${JSON.stringify(fields.myReportedWishId)}}\n\n`;
 export const CLOSED_EVENT = 'event: closed\ndata: {}\n\n';
+/** The `closed` event that also says why (its data is a RoomClosedEvent). */
+export const closedEvent = (reason: RoomClosedReason): string => `event: closed\ndata: ${JSON.stringify({ reason })}\n\n`;
 const HEARTBEAT = ': keep-alive\n\n';
 
 export class RoomEventHub {
@@ -107,6 +110,13 @@ export class RoomEventHub {
     for (const stream of this.streams.get(code) ?? []) this.end(code, stream);
   }
 
+  /** One viewer is out of the room (removed by the host): tell each of their streams why and end it. */
+  closeViewer(code: string, userId: string, reason: RoomClosedReason): void {
+    for (const stream of [...(this.streams.get(code) ?? [])]) {
+      if (stream.userId === userId) this.end(code, stream, closedEvent(reason));
+    }
+  }
+
   /** Open streams across all rooms. */
   get size(): number {
     return this.total;
@@ -126,8 +136,8 @@ export class RoomEventHub {
     }
   }
 
-  private end(code: string, stream: Stream): void {
-    this.safeWrite(code, stream, CLOSED_EVENT);
+  private end(code: string, stream: Stream, closed: string = CLOSED_EVENT): void {
+    this.safeWrite(code, stream, closed);
     try {
       stream.sink.end();
     } catch {

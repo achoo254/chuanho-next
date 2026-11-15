@@ -10,7 +10,7 @@ import { useGameSession } from '../../game/game-session-context';
 import { type PlayModeProps, useRegisterStrike } from '../../modes/mode-chrome';
 import type { PlayStage } from '../../modes/play-stage';
 import { useRoomGameText } from './room-game-messages';
-import { introDurationMs, introIgniteAtMs, introLook } from './room-incense-timeline';
+import { applyIncenseLook, introDurationMs, introIgniteAtMs, introLook } from './room-incense-timeline';
 
 /** Whether the full intro has played in this app session (a reload plays it again). */
 let fullIntroPlayed = false;
@@ -39,8 +39,7 @@ export function useRoomIntro(stage: PlayStage): RoomIntro {
   const finish = useCallback((): void => {
     if (finished.current) return;
     finished.current = true;
-    const look = introLook(setup.durationMs, setup.durationMs, setup.reducedMotion);
-    stage.setIncense(look.burn, look.smoking);
+    applyIncenseLook(stage, introLook(setup.durationMs, setup.durationMs, setup.reducedMotion));
     setRunning(false);
   }, [stage, setup]);
 
@@ -53,8 +52,7 @@ export function useRoomIntro(stage: PlayStage): RoomIntro {
     const step = (): void => {
       if (finished.current) return;
       const elapsed = performance.now() - startedAt;
-      const look = introLook(elapsed, setup.durationMs, setup.reducedMotion);
-      stage.setIncense(look.burn, look.smoking);
+      applyIncenseLook(stage, introLook(elapsed, setup.durationMs, setup.reducedMotion));
       if (!ignited && elapsed >= igniteAt) {
         ignited = true;
         if (ambient.current) playSample('bell', { gain: 0.6 });

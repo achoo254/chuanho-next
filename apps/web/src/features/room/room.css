@@ -151,6 +151,27 @@
   color: var(--c-text-muted);
   font-size: 12px;
 }
+/* The host's view adds a column for the "ask to leave" button (empty on the host's own row). */
+.room-members.is-host .room-member {
+  grid-template-columns: minmax(0, 1fr) 72px auto var(--tap);
+}
+.room-member-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-text-muted);
+}
+.room-member-remove[aria-expanded='true'] {
+  color: var(--c-primary);
+}
+.room-member-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
 
 /* Writing and listing wishes */
 .room-composer {

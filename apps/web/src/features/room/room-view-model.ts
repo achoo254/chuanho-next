@@ -21,6 +21,8 @@ export interface MemberView {
   readonly isMe: boolean;
   readonly isHost: boolean;
   readonly stick: StickView | null;
+  /** The viewer is the host and this is someone else: the host may remove them from the room. */
+  readonly canRemove: boolean;
 }
 
 export interface WishView {
@@ -61,6 +63,7 @@ export function roomView(snapshot: RoomSnapshot, serverNow: number): RoomView {
     isMe: member.id === snapshot.meId,
     isHost: member.id === snapshot.hostId,
     stick: member.stick ? stickState(member.stick, serverNow) : null,
+    canRemove: isHost && member.id !== snapshot.meId,
   }));
   const burningSticks = members.flatMap((member) => (member.stick && !member.stick.burntOut ? [member.stick] : []));
   const names = new Map(members.map((member) => [member.id, member.name]));
@@ -99,6 +102,13 @@ export function wishFeedback(text: string): { readonly length: number; readonly 
   const reasonKey = checked.ok || checked.reason === 'empty' ? null : (`reason.${checked.reason}` as const);
   return { length: text.trim().length, max: WISH_MAX, sendable: checked.ok, reasonKey };
 }
+
+/**
+ * A room ending the panel handles itself instead of showing "the room has closed": a lost session (sign in again), or
+ * the host removing the player (back to the lobby with a gentle word).
+ */
+export const endsInLobby = (error: RoomApiError | null): error is RoomApiError =>
+  error !== null && (error.kind === 'signed-out' || (error.kind === 'room' && error.code === 'removed'));
 
 /** The words for an API error. */
 export function errorKey(error: RoomApiError): RoomTextKey {

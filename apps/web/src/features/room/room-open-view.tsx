@@ -111,7 +111,7 @@ export function RoomOpenView({ snapshot, view, mode, actions, onLit, onPlay }: R
         onDelete={(wishId) => void perform(() => actions.deleteWish(wishId))}
         onReport={(wishId) => void perform(() => actions.report(wishId))}
       />
-      <RoomMembers members={view.members} />
+      <RoomMembers members={view.members} onRemove={(memberId) => perform(() => actions.removeMember(memberId))} />
     </>
   );
 }

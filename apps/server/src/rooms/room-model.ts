@@ -45,6 +45,8 @@ export interface Room {
    * gives a second report.
    */
   readonly departed: Map<string, Member>;
+  /** Account ids the host removed: kept out of this room until it is deleted (leaving and joining do not clear it). */
+  readonly removed: Set<string>;
   wishes: Wish[];
   litTotal: number;
   lastActivityAt: number;

@@ -1,7 +1,7 @@
 /**
  * One room from joining to its end: a short wait, the burning room (room-open-view.tsx), the ashes with the share
- * card (room-ashes.tsx), or a closed room. Refusals to get in, a lost session and leaving go back up to the panel,
- * and so does the player's own stick, which the panel shows in the 3D censer.
+ * card (room-ashes.tsx), or a closed room. Refusals to get in, a lost session, being removed by the host and leaving
+ * go back up to the panel, and so does the player's own stick, which the panel shows in the 3D censer.
  */
 import { type ReactNode, useEffect } from 'react';
 import type { RoomApi, RoomApiError } from './room-api';
@@ -9,7 +9,7 @@ import { RoomAshes } from './room-ashes';
 import { type MyStickSource, OUTSIDE_ROOM } from './room-incense-timeline';
 import { useRoomText } from './room-messages';
 import { RoomOpenView } from './room-open-view';
-import { roomView } from './room-view-model';
+import { endsInLobby, roomView } from './room-view-model';
 import { useRoomSession } from './use-room-session';
 
 interface RoomScreenProps {
@@ -39,8 +39,8 @@ export function RoomScreen({ code, api, onExit, onStick, onLit, onPlay }: RoomSc
   }, [onStick, inRoom, litAt, burnsOutAt, offset]);
   useEffect(() => () => onStick(OUTSIDE_ROOM), [onStick]);
 
-  // Could not get in, or the session ended: the panel decides what to show instead.
-  const exitError = state.phase === 'failed' ? state.error : state.phase === 'gone' && state.error?.kind === 'signed-out' ? state.error : null;
+  // Could not get in, the session ended, or the host removed the player: the panel decides what to show instead.
+  const exitError = state.phase === 'failed' ? state.error : state.phase === 'gone' && endsInLobby(state.error) ? state.error : null;
   useEffect(() => {
     if (exitError) onExit(exitError);
   }, [exitError, onExit]);

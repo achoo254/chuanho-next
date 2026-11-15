@@ -19,6 +19,8 @@ export interface RoomActions {
   deleteWish(wishId: string): Promise<RoomApiError | null>;
   report(wishId: string): Promise<RoomApiError | null>;
   setLocked(locked: boolean): Promise<RoomApiError | null>;
+  /** Host only: removes another member from the room for good. */
+  removeMember(memberId: string): Promise<RoomApiError | null>;
   leave(): Promise<RoomApiError | null>;
 }
 
@@ -82,11 +84,12 @@ export function useRoomSession(code: string, api: RoomApi): RoomSession {
   const deleteWish = useCallback((wishId: string) => run(api.deleteWish(code, wishId)), [run, api, code]);
   const report = useCallback((wishId: string) => run(api.report(code, wishId)), [run, api, code]);
   const setLocked = useCallback((locked: boolean) => run(api.lock(code, locked)), [run, api, code]);
+  const removeMember = useCallback((memberId: string) => run(api.removeMember(code, memberId)), [run, api, code]);
   const leave = useCallback(async () => {
     const result = await api.leave(code);
     return result.ok ? null : result.error;
   }, [api, code]);
 
   const offset = state.phase === 'live' || state.phase === 'gone' ? state.offset : 0;
-  return { state, serverNow: deviceNow + offset, offset, actions: { light, wish, deleteWish, report, setLocked, leave } };
+  return { state, serverNow: deviceNow + offset, offset, actions: { light, wish, deleteWish, report, setLocked, removeMember, leave } };
 }
