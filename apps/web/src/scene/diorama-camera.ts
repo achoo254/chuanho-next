@@ -25,6 +25,8 @@ const IDLE_YAW = 0.018;
 const IDLE_PERIOD_MS = 14000;
 /** Time constant of the glide between shots. */
 const SHOT_GLIDE_MS = 420;
+/** Lowest camera elevation, in radians above the ground plane. */
+const MIN_PITCH = 0.12;
 
 export function createDioramaCamera(scene: Scene, reducedMotion: boolean): DioramaCamera {
   const camera = new TargetCamera('diorama-camera', new Vector3(0, 10, -20), scene);
@@ -45,8 +47,10 @@ export function createDioramaCamera(scene: Scene, reducedMotion: boolean): Diora
       shot = reducedMotion ? goal : blendCameraShot(shot, goal, 1 - Math.exp(-deltaMs / SHOT_GLIDE_MS));
       const frame = fitDioramaCamera(aspect, DIORAMA_EXTENT);
       const idle = reducedMotion ? 0 : Math.sin((timeMs / IDLE_PERIOD_MS) * Math.PI * 2) * IDLE_YAW;
-      const distance = frame.distance * shot.distanceScale;
-      const position = orbitPosition(shot.target, offset.yaw + idle, frame.pitch + shot.pitchOffset + offset.pitch, distance);
+      const distance = frame.distance * shot.distanceScale * offset.zoom;
+      // Never below the horizon line: a low free view still looks across the yard, not up from under it.
+      const pitch = Math.max(MIN_PITCH, frame.pitch + shot.pitchOffset + offset.pitch);
+      const position = orbitPosition(shot.target, offset.yaw + idle, pitch, distance);
       camera.fov = frame.fov;
       camera.position.set(position.x, position.y, position.z);
       target.set(shot.target.x, shot.target.y, shot.target.z);

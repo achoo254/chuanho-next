@@ -130,6 +130,8 @@ export function Game3dShell(): ReactNode {
   }, [world, mode]);
   useEffect(() => {
     world?.setInputEnabled(started && !infoOpen && mode === 'yard');
+    // A play mode has its own shot, so the free view always starts from the framed default.
+    if (mode !== 'yard') world?.adjustView('reset');
   }, [world, started, infoOpen, mode]);
   useEffect(() => {
     world?.stage.setMoSkin(progress.moSkin);
@@ -160,6 +162,10 @@ export function Game3dShell(): ReactNode {
         return;
       }
       if (infoOpen) return;
+      if (command.kind === 'view') {
+        if (mode === 'yard') worldRef.current?.adjustView(command.change);
+        return;
+      }
       if (command.action === 'strike') {
         if (STRIKE_MODES.has(mode)) strikeRef.current?.(eventTimeMs);
         else if (mode === 'yard') yardStrike();

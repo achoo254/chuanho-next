@@ -51,6 +51,8 @@ export interface BabylonWorld {
   pulse(prop: InteractivePropId): void;
   setFocus(prop: InteractivePropId | null): void;
   setInputEnabled(enabled: boolean): void;
+  /** The free camera: zoom in or out by a step, or back to the framed view. */
+  adjustView(change: 'reset' | 'in' | 'out'): void;
   /** The tappable prop under a screen point (CSS pixels), or null. */
   pickPropAt(clientX: number, clientY: number): InteractivePropId | null;
   /** The play modes' handle on the scene: character, wooden fish, incense, note orbs, share shot. */
@@ -204,6 +206,10 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
       pulse: (prop) => pulse.start(prop),
       setFocus: (prop) => picking.setFocus(prop),
       setInputEnabled: (enabled) => picking.setEnabled(enabled),
+      adjustView: (change) => {
+        if (change === 'reset') sway.resetView();
+        else sway.zoomBy(change === 'in' ? 0.8 : 1.25);
+      },
       pickPropAt: (x, y) => picking.pickPropAt(x, y),
       stage,
       dispose: disposeAll,

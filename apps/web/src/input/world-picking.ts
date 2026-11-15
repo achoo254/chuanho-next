@@ -44,6 +44,14 @@ export function createWorldPicking(options: WorldPickingOptions): WorldPicking {
   let pendingMove: PointerEvent | null = null;
   let frame = 0;
 
+  // Active pointers on empty ground, for the two-finger pinch zoom.
+  const touches = new Map<number, { x: number; y: number }>();
+  let pinchLast = 0;
+  const pinchDistance = (): number => {
+    const [a, b] = [...touches.values()];
+    return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
+  };
+
   const glowing = new Set<Mesh>();
   const refreshGlow = (): void => {
     const wanted = new Set<Mesh>();
@@ -82,13 +90,27 @@ export function createWorldPicking(options: WorldPickingOptions): WorldPicking {
       options.onPick(prop);
       return;
     }
-    sway.beginDrag(event.clientX);
+    touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (touches.size === 2) {
+      // A second finger turns the drag into a pinch.
+      sway.endDrag();
+      pinchLast = pinchDistance();
+    } else {
+      sway.beginDrag(event.clientX, event.clientY);
+    }
     canvas.setPointerCapture(event.pointerId);
     canvas.style.cursor = 'grabbing';
   };
   const onPointerMove = (event: PointerEvent): void => {
+    if (touches.has(event.pointerId)) touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (touches.size === 2) {
+      const distance = pinchDistance();
+      if (pinchLast > 0 && distance > 0) sway.zoomBy(pinchLast / distance);
+      pinchLast = distance;
+      return;
+    }
     if (sway.dragging) {
-      sway.dragTo(event.clientX);
+      sway.dragTo(event.clientX, event.clientY);
       return;
     }
     if (!enabled || event.pointerType !== 'mouse') return;
@@ -103,12 +125,25 @@ export function createWorldPicking(options: WorldPickingOptions): WorldPicking {
     }
   };
   const onPointerUp = (event: PointerEvent): void => {
-    if (!sway.dragging) return;
+    const wasPinching = touches.size === 2;
+    touches.delete(event.pointerId);
+    if (wasPinching) pinchLast = 0;
+    if (!sway.dragging && !wasPinching) return;
     sway.endDrag();
     if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
     canvas.style.cursor = hovered ? 'pointer' : 'grab';
   };
   const onPointerLeave = (): void => setHovered(null, null);
+  const onWheel = (event: WheelEvent): void => {
+    if (!enabled) return;
+    event.preventDefault();
+    // Deltas come in pixels, lines or pages depending on the device; the response is smooth and exponential.
+    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 400 : 1;
+    sway.zoomBy(Math.exp(event.deltaY * unit * 0.0012));
+  };
+  const onDoubleClick = (event: MouseEvent): void => {
+    if (enabled && !pickPoint(event.clientX, event.clientY)) sway.resetView();
+  };
 
   canvas.style.cursor = 'grab';
   canvas.addEventListener('pointerdown', onPointerDown);
@@ -116,6 +151,8 @@ export function createWorldPicking(options: WorldPickingOptions): WorldPicking {
   canvas.addEventListener('pointerup', onPointerUp);
   canvas.addEventListener('pointercancel', onPointerUp);
   canvas.addEventListener('pointerleave', onPointerLeave);
+  canvas.addEventListener('wheel', onWheel, { passive: false });
+  canvas.addEventListener('dblclick', onDoubleClick);
 
   return {
     pickPropAt: pickPoint,
@@ -134,6 +171,8 @@ export function createWorldPicking(options: WorldPickingOptions): WorldPicking {
       canvas.removeEventListener('pointerup', onPointerUp);
       canvas.removeEventListener('pointercancel', onPointerUp);
       canvas.removeEventListener('pointerleave', onPointerLeave);
+      canvas.removeEventListener('wheel', onWheel);
+      canvas.removeEventListener('dblclick', onDoubleClick);
       highlight.removeAllMeshes();
     },
   };

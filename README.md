@@ -58,6 +58,8 @@ pnpm test         # vitest, tối đa 2 worker
 Trang mặc định là bản 3D (Babylon.js, WebGPU rồi WebGL2, canvas phủ toàn cửa sổ, HUD biểu tượng, thế giới là menu).
 Bản 2D cũ đã gỡ hẳn: trang chỉ còn bản 3D. Babylon nằm trong các gói tách riêng.
 
+**Camera tự do** (ở sân): kéo trên đất trống để xoay và nghiêng, cuộn chuột hoặc chụm hai ngón để zoom gần xa, nhấp đúp hoặc phím `R` để về góc nhìn ban đầu, phím `+` và `-` để zoom. Vào chế độ chơi thì camera tự về góc riêng của chế độ đó.
+
 | Tham số thêm | Tác dụng |
 |---|---|
 | `renderer=webgl2` | Bỏ qua WebGPU, chạy WebGL2 để so hai đường |
