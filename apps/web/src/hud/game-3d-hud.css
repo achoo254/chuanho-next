@@ -209,7 +209,9 @@
   transform: translateX(-50%);
 }
 .game3d-bar [data-tip]:hover::after,
-.game3d-bar .hud-btn:focus-visible::after {
+.game3d-bar .hud-btn:focus-visible::after,
+.play-bar [data-tip]:hover::after,
+.play-bar .hud-btn:focus-visible::after {
   top: auto;
   bottom: calc(100% + var(--space-2));
 }

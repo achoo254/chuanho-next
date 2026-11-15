@@ -5,7 +5,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { audioEngine, heardContextTime } from '../audio/audio-engine';
-import { type LofiPad, startLofiPad } from '../audio/lofi-pad-synth';
+import { type BackingTrack, startBackingTrack } from '../audio/backing-track';
 import type { BeatChart } from '../game/beat-pattern';
 import { type RhythmState, type TapOutcome, applyTap, expireMissedNotes, initialRhythmState } from '../game/rhythm-judge';
 
@@ -30,7 +30,7 @@ export function useRhythmSong(chart: BeatChart, onFinish: (state: RhythmState) =
   const [state, setState] = useState<RhythmState>(() => initialRhythmState(chart.notes.length));
   const judge = useRef(state);
   const clock = useRef<((perfMs: number) => number) | null>(null);
-  const pad = useRef<LofiPad | null>(null);
+  const pad = useRef<BackingTrack | null>(null);
   const frame = useRef(0);
   const onFinishRef = useRef(onFinish);
   useEffect(() => {
@@ -56,7 +56,7 @@ export function useRhythmSong(chart: BeatChart, onFinish: (state: RhythmState) =
     if (engine) {
       const startAt = engine.ctx.currentTime + LEAD_IN_S;
       clock.current = (perfMs) => ((heardContextTime(perfMs) ?? engine.ctx.currentTime) - startAt) * 1000;
-      pad.current = startLofiPad({ bpm: chart.bpm, startAt, pulse: true, endAt: startAt + chart.durationMs / 1000 });
+      pad.current = startBackingTrack({ bpm: chart.bpm, startAt, pulse: true, endAt: startAt + chart.durationMs / 1000 });
     } else {
       // No WebAudio: the song runs silently on the page clock so the mode still plays.
       const startPerf = performance.now() + LEAD_IN_S * 1000;

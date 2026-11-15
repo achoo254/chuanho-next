@@ -8,16 +8,35 @@
 
 export const SAMPLES = {
   mo: '/audio/mo-hit.wav',
+  mo2: '/audio/mo-hit-2.wav',
+  mo3: '/audio/mo-hit-3.wav',
+  mo4: '/audio/mo-hit-4.wav',
   bell: '/audio/bell.mp3',
   bowl: '/audio/bowl.mp3',
+  pad: '/audio/pad-loop.mp3',
+  pulse: '/audio/pulse.wav',
 } as const;
 export type SampleName = keyof typeof SAMPLES;
+
+/** The wooden fish is recorded in four takes with slightly different pitch; each strike plays one of them. */
+const MO_TAKES: readonly SampleName[] = ['mo', 'mo2', 'mo3', 'mo4'];
+let lastMoTake = -1;
+
+function pickMoTake(buffers: ReadonlyMap<SampleName, AudioBuffer>): SampleName | null {
+  const loaded = MO_TAKES.filter((take) => buffers.has(take));
+  if (loaded.length === 0) return null;
+  // Never the same take twice in a row, so a run of strikes does not sound like a machine.
+  let index = Math.floor(Math.random() * loaded.length);
+  if (loaded.length > 1 && index === lastMoTake) index = (index + 1) % loaded.length;
+  lastMoTake = index;
+  return loaded[index] ?? null;
+}
 
 interface Engine {
   readonly ctx: AudioContext;
   /** Sound effects (wooden bell, bell, bowl). */
   readonly sfx: GainNode;
-  /** Synthesized music (the lofi pad), kept below the effects. */
+  /** Music (the AI-made pad and pulse), kept below the effects. */
   readonly music: GainNode;
   readonly buffers: Map<SampleName, AudioBuffer>;
 }
@@ -102,7 +121,8 @@ export function playSample(name: SampleName, options: { gain?: number; when?: nu
   if (!e) return;
   const when = options.when ?? e.ctx.currentTime;
   const gain = options.gain ?? 1;
-  const buffer = e.buffers.get(name);
+  const take = name === 'mo' ? pickMoTake(e.buffers) : name;
+  const buffer = take ? e.buffers.get(take) : undefined;
   if (!buffer) {
     if (name === 'mo') synthWoodblock(e, when, gain);
     return;
