@@ -24,6 +24,7 @@ import type { InteractivePropId } from '../scene/world-actions';
 import { type RenderBackend, createRenderEngine } from './create-render-engine';
 import type { RendererPreference } from './game-3d-flag';
 import { startingQualityLevel } from './quality-levels';
+import { createRenderGuard, warmUpScene } from './warm-up-scene';
 import { createQualityScaler } from './quality-scaler';
 import { createPropPulse } from './prop-pulse';
 import { configureSelfHostedDecoders } from './self-hosted-decoders';
@@ -155,11 +156,20 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
       canvas.dataset.quality = level.id;
     });
     canvas.dataset.backend = backend;
+    // A lost graphics context (a phone running short of GPU memory) also blanks the canvas; count it for DevTools.
+    canvas.dataset.contextLost = '0';
+    canvas.addEventListener('webglcontextlost', () => {
+      canvas.dataset.contextLost = String(Number(canvas.dataset.contextLost ?? '0') + 1);
+    });
 
+    // Compile every shader now (also those of props that stay hidden at first), not on the first scene change.
+    await warmUpScene(scene);
+    checkAborted();
     await scene.whenReadyAsync();
     checkAborted();
     options.onProgress(1);
 
+    const canDraw = createRenderGuard(scene);
     let timeMs = 0;
     let fpsWindowMs = 0;
     const renderFrame = (): void => {
@@ -173,7 +183,8 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
       lighting.update(deltaMs);
       pulse.update(deltaMs);
       stage.update(deltaMs);
-      scene.render();
+      // While a shader is still compiling the last picture stays up instead of a half-built (blank) frame.
+      if (canDraw()) scene.render();
       scaler.onFrame(deltaMs);
       fpsWindowMs += deltaMs;
       if (fpsWindowMs >= 1000) {
