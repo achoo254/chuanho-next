@@ -1,0 +1,61 @@
+/**
+ * The words of the "say it gently" screen in both languages. The sentences of the bank stay Vietnamese in both: they
+ * are meant to be sent to Vietnamese speakers. A new group or tone adds its chip label here (`group.*`, `tone.*`).
+ */
+import { createFeatureText } from '../feature-text';
+
+const vi = {
+  title: 'Dịch sang tiếng hiền',
+  intro: 'Đang bực mà vẫn muốn nói cho êm? Chọn tình huống và giọng, mình gợi ý một câu để gửi.',
+  privacy: 'Mọi lựa chọn chỉ nằm trên máy bạn, không gửi đi đâu cả.',
+  loading: 'Đang mở sổ câu hiền…',
+  failed: 'Chưa tải được sổ câu. Kiểm tra mạng rồi thử lại nhé.',
+  retry: 'Thử lại',
+  'step.group': 'Chuyện về',
+  'step.situation': 'Tình huống',
+  'step.tone': 'Giọng',
+  'group.work': 'Công việc',
+  'group.friends': 'Bạn bè',
+  'group.family': 'Gia đình',
+  'group.love': 'Tình yêu',
+  'tone.soft': 'Nhẹ nhàng',
+  'tone.direct': 'Thẳng mà lịch sự',
+  'tone.funny': 'Hài hước',
+  pickSituation: 'Chọn một tình huống để xem câu gợi ý.',
+  resultLabel: 'Câu gợi ý',
+  counter: 'Câu {n}/{total}',
+  another: 'Câu khác',
+  copy: 'Chép',
+  copied: 'Đã chép',
+  copyFailed: 'Chưa chép được, bạn bôi đen câu để chép tay nhé.',
+  share: 'Chia sẻ',
+};
+
+const en: Record<keyof typeof vi, string> = {
+  title: 'Say it gently',
+  intro: 'Annoyed but still want to keep it kind? Pick a situation and a tone for a sentence to send (in Vietnamese).',
+  privacy: 'Everything you pick stays on this device.',
+  loading: 'Opening the book of gentle words…',
+  failed: 'Could not load the sentences. Check your connection and try again.',
+  retry: 'Try again',
+  'step.group': 'About',
+  'step.situation': 'Situation',
+  'step.tone': 'Tone',
+  'group.work': 'Work',
+  'group.friends': 'Friends',
+  'group.family': 'Family',
+  'group.love': 'Love',
+  'tone.soft': 'Soft',
+  'tone.direct': 'Direct but polite',
+  'tone.funny': 'Funny',
+  pickSituation: 'Pick a situation to see a suggestion.',
+  resultLabel: 'Suggestion',
+  counter: 'Sentence {n}/{total}',
+  another: 'Another one',
+  copy: 'Copy',
+  copied: 'Copied',
+  copyFailed: 'Could not copy; select the sentence to copy it by hand.',
+  share: 'Share',
+};
+
+export const useGentleText = createFeatureText(vi, en);
