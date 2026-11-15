@@ -5,7 +5,8 @@
 # With empty stdin (`< /dev/null`) it keeps the installed key and only
 # reinstalls the sudo command. The user can only write
 # /var/www/chuanho/ci-incoming and run one root-owned command through
-# sudo: /usr/local/sbin/chuanho-activate-incoming <release-id>.
+# sudo: /usr/local/sbin/chuanho-activate-incoming <release-id> (the web build) and
+# /usr/local/sbin/chuanho-activate-server <release-id> (the API build).
 set -euo pipefail
 USER_NAME=chuanho-deploy
 ROOT=/var/www/chuanho
@@ -28,7 +29,8 @@ fi
 
 install -d -m 750 -o "$USER_NAME" -g "$USER_NAME" "$ROOT/ci-incoming"
 install -m 755 -o root -g root "$ROOT/infra/activate-incoming.sh" /usr/local/sbin/chuanho-activate-incoming
-printf '%s ALL=(root) NOPASSWD: /usr/local/sbin/chuanho-activate-incoming\n' "$USER_NAME" >/etc/sudoers.d/chuanho-deploy
+install -m 755 -o root -g root "$ROOT/infra/activate-server.sh" /usr/local/sbin/chuanho-activate-server
+printf '%s ALL=(root) NOPASSWD: /usr/local/sbin/chuanho-activate-incoming, /usr/local/sbin/chuanho-activate-server\n' "$USER_NAME" >/etc/sudoers.d/chuanho-deploy
 chmod 440 /etc/sudoers.d/chuanho-deploy
 visudo -cf /etc/sudoers.d/chuanho-deploy
 echo "setup-deploy-user: done"

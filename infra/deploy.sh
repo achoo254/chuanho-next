@@ -39,13 +39,19 @@ pnpm build
 release_id="$(date -u +%Y%m%d-%H%M%S)-$(git rev-parse --short=12 HEAD)"
 ssh "${ssh_opts[@]}" "$SSH_TARGET" "mkdir -p $remote_dir/ci-incoming/$release_id $remote_dir/infra" </dev/null
 rsync -rlz --delete -e "ssh ${ssh_opts[*]}" apps/web/dist/ "$SSH_TARGET:$remote_dir/ci-incoming/$release_id/"
-rsync -rlz -e "ssh ${ssh_opts[*]}" infra/nginx infra/activate-incoming.sh infra/setup-deploy-user.sh infra/install-nginx-conf.sh "$SSH_TARGET:$remote_dir/infra/"
+rsync -rlz -e "ssh ${ssh_opts[*]}" infra/nginx infra/activate-incoming.sh infra/activate-server.sh infra/chuanho-server.service infra/setup-deploy-user.sh infra/install-nginx-conf.sh "$SSH_TARGET:$remote_dir/infra/"
+# The API build: dist/server/index.mjs next to drizzle/, the layout chuanho-server.service runs.
+ssh "${ssh_opts[@]}" "$SSH_TARGET" "mkdir -p $remote_dir/ci-incoming/server-$release_id/dist" </dev/null
+rsync -rlz --delete -e "ssh ${ssh_opts[*]}" apps/server/dist/server/ "$SSH_TARGET:$remote_dir/ci-incoming/server-$release_id/dist/server/"
+rsync -rlz --delete -e "ssh ${ssh_opts[*]}" apps/server/drizzle/ "$SSH_TARGET:$remote_dir/ci-incoming/server-$release_id/drizzle/"
 
 ssh "${ssh_opts[@]}" "$SSH_TARGET" bash -s <<EOF
 set -euo pipefail
 cd $remote_dir
 chown -R root:root infra
 install -m 755 -o root -g root infra/activate-incoming.sh /usr/local/sbin/chuanho-activate-incoming
+install -m 755 -o root -g root infra/activate-server.sh /usr/local/sbin/chuanho-activate-server
 bash infra/install-nginx-conf.sh
+bash infra/activate-server.sh $release_id
 bash infra/activate-incoming.sh $release_id
 EOF
