@@ -1,61 +1,51 @@
 /**
- * The backdrop behind the diorama: a large inside-out sphere painted with a vertical gradient through
- * vertex colours, so a time-of-day change only rewrites a small colour buffer. Unlit and fog-free.
+ * The sky behind the garden: an AI-painted picture (public/art/backdrop/sky.webp: deep blue at the top, pale near the
+ * horizon, soft clouds) drawn as a full-window background layer, scaled like CSS `object-fit: cover` and pinned to
+ * the top edge. It only shows when the player lowers the free camera and the horizon comes into view; the garden,
+ * hills and fog hide it otherwise. The time of day tints it.
  */
-import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
-import { Color3 } from '@babylonjs/core/Maths/math.color';
-import { CreateSphere } from '@babylonjs/core/Meshes/Builders/sphereBuilder';
-import { Mesh } from '@babylonjs/core/Meshes/mesh';
-import { VertexBuffer } from '@babylonjs/core/Buffers/buffer';
+import { Layer } from '@babylonjs/core/Layers/layer';
+import '@babylonjs/core/Layers/layerSceneComponent';
+import { Color4 } from '@babylonjs/core/Maths/math.color';
+import { Vector2 } from '@babylonjs/core/Maths/math.vector';
 import type { Scene } from '@babylonjs/core/scene';
 import type { Rgb } from './lighting-presets';
 
-const RADIUS = 80;
+const SKY_URL = '/art/backdrop/sky.webp';
+/** The picture's shape (2048 x 832). */
+const SKY_ASPECT = 2048 / 832;
+
+/** Scale and offset that make a picture of `imageAspect` cover a window of `aspect`, pinned to the top edge. */
+export function coverTopLayout(aspect: number, imageAspect: number): { readonly scale: readonly [number, number]; readonly offsetY: number } {
+  if (!(aspect > 0)) return { scale: [1, 1], offsetY: 0 };
+  const scale: readonly [number, number] = aspect > imageAspect ? [1, aspect / imageAspect] : [imageAspect / aspect, 1];
+  return { scale, offsetY: 1 - scale[1] };
+}
 
 export interface SkyDome {
-  readonly mesh: Mesh;
-  paint(top: Rgb, horizon: Rgb): void;
+  /** Tints the painted sky (white shows it as drawn). */
+  tint(colour: Rgb): void;
+  /** Keeps the picture covering the window as its shape changes. */
+  fit(aspect: number): void;
   dispose(): void;
 }
 
 export function createSkyDome(scene: Scene): SkyDome {
-  const mesh = CreateSphere('sky', { diameter: RADIUS * 2, segments: 16, sideOrientation: Mesh.BACKSIDE }, scene);
-  mesh.isPickable = false;
-  mesh.infiniteDistance = true;
-  mesh.applyFog = false;
-  const material = new StandardMaterial('sky', scene);
-  material.disableLighting = true;
-  material.diffuseColor = Color3.Black();
-  material.specularColor = Color3.Black();
-  material.emissiveColor = Color3.White();
-  material.fogEnabled = false;
-  mesh.material = material;
-
-  const positions = mesh.getVerticesData(VertexBuffer.PositionKind) ?? [];
-  const count = positions.length / 3;
-  const colours = new Float32Array(count * 4);
-  // Height of each vertex, −1 (nadir) to 1 (zenith).
-  const heights = new Float32Array(count);
-  for (let i = 0; i < count; i += 1) heights[i] = (positions[i * 3 + 1] ?? 0) / RADIUS;
-
+  const layer = new Layer('painted-sky', SKY_URL, scene, true);
+  let lastAspect = 0;
   return {
-    mesh,
-    paint(top, horizon) {
-      for (let i = 0; i < count; i += 1) {
-        // The camera looks down on the diorama, so it sees the lower half of the dome: the gradient runs from the
-        // warm colour straight below up to the deep colour just under the horizon, i.e. bottom to top of the screen.
-        const t = Math.min(1, Math.max(0, ((heights[i] ?? 0) + 1) / 0.8));
-        colours[i * 4] = horizon[0] + (top[0] - horizon[0]) * t;
-        colours[i * 4 + 1] = horizon[1] + (top[1] - horizon[1]) * t;
-        colours[i * 4 + 2] = horizon[2] + (top[2] - horizon[2]) * t;
-        colours[i * 4 + 3] = 1;
-      }
-      if (mesh.isVerticesDataPresent(VertexBuffer.ColorKind)) mesh.updateVerticesData(VertexBuffer.ColorKind, colours);
-      else mesh.setVerticesData(VertexBuffer.ColorKind, colours, true);
+    tint(colour) {
+      layer.color = new Color4(colour[0], colour[1], colour[2], 1);
+    },
+    fit(aspect) {
+      if (aspect === lastAspect) return;
+      lastAspect = aspect;
+      const { scale, offsetY } = coverTopLayout(aspect, SKY_ASPECT);
+      layer.scale = new Vector2(scale[0], scale[1]);
+      layer.offset = new Vector2(0, offsetY);
     },
     dispose() {
-      material.dispose();
-      mesh.dispose();
+      layer.dispose();
     },
   };
 }

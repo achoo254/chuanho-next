@@ -51,6 +51,8 @@ export interface BabylonWorld {
   pulse(prop: InteractivePropId): void;
   setFocus(prop: InteractivePropId | null): void;
   setInputEnabled(enabled: boolean): void;
+  /** True once the player has turned or zoomed the free camera away from the framed view. */
+  isViewChanged(): boolean;
   /** The free camera: zoom in or out by a step, or back to the framed view. */
   adjustView(change: 'reset' | 'in' | 'out'): void;
   /** The tappable prop under a screen point (CSS pixels), or null. */
@@ -104,7 +106,6 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
     cleanups.push(() => scene.dispose());
     const palette = createMaterialPalette(scene);
     const sky = createSkyDome(scene);
-    sky.mesh.setEnabled(false); // the camera looks down on the garden and never sees the sky
     const backdrop = createGardenBackdrop(scene, reducedMotion);
     const view = createDioramaCamera(scene, reducedMotion);
     const post = createPostProcessing(scene, view.camera);
@@ -168,6 +169,7 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
       const height = canvas.clientHeight;
       // The share shot holds the camera while it renders; otherwise the framing follows the window and the mode.
       if (!stage.capturing) post.focusAt(view.update(height > 0 ? width / height : 1, sway.update(deltaMs), timeMs));
+      sky.fit(height > 0 ? width / height : 1);
       lighting.update(deltaMs);
       pulse.update(deltaMs);
       stage.update(deltaMs);
@@ -206,6 +208,7 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
       pulse: (prop) => pulse.start(prop),
       setFocus: (prop) => picking.setFocus(prop),
       setInputEnabled: (enabled) => picking.setEnabled(enabled),
+      isViewChanged: () => sway.viewChanged,
       adjustView: (change) => {
         if (change === 'reset') sway.resetView();
         else sway.zoomBy(change === 'in' ? 0.8 : 1.25);

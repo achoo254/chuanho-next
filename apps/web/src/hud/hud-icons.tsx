@@ -7,6 +7,7 @@ import type { LightingPresetId } from '../scene/lighting-presets';
 import type { WorldAction } from '../scene/world-actions';
 
 const PATHS = {
+  resetView: 'M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4M12 9v6M9 12h6',
   info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 11v6M12 7.5v.5',
   soundOn: 'M4 9h4l5-4v14l-5-4H4zM16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12',
   soundOff: 'M4 9h4l5-4v14l-5-4H4zM17 9l5 6M22 9l-5 6',

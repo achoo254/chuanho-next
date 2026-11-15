@@ -47,6 +47,7 @@ export function Game3dShell(): ReactNode {
   const [mode, setMode] = useState<PlayMode>(demo.mode ?? 'yard');
   const [infoOpen, setInfoOpen] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [viewChanged, setViewChanged] = useState(false);
   const [toast, setToast] = useState<ToastContent | null>(null);
   const [hint, setHint] = useState<HoverHint | null>(null);
   const [preset, setPreset] = useState<LightingPresetId>(presetFromAddress);
@@ -202,6 +203,13 @@ export function Game3dShell(): ReactNode {
     setStarted(true);
   }, []);
 
+  // The reset-view button appears once the player has moved the free camera (checked a few times a second).
+  useEffect(() => {
+    if (!world || !started) return;
+    const timer = window.setInterval(() => setViewChanged(world.isViewChanged()), 250);
+    return () => window.clearInterval(timer);
+  }, [world, started]);
+
   const registerStrike = useCallback((handler: ((eventTimeMs: number) => void) | null): void => {
     strikeRef.current = handler;
   }, []);
@@ -224,6 +232,8 @@ export function Game3dShell(): ReactNode {
               onPreset={changePreset}
               onToggleSound={toggleSound}
               onInfo={() => setInfoOpen(true)}
+              viewChanged={viewChanged && mode === 'yard'}
+              onResetView={() => world.adjustView('reset')}
             />
           )}
           {started && <CharacterBubble stage={world.stage} visible={mode === 'yard' && !infoOpen} />}

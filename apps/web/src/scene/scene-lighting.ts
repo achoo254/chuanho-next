@@ -85,7 +85,7 @@ export function createSceneLighting({ scene, palette, sky, backdrop, post, shado
     scene.fogColor = rgbToColor3(look.fog);
     scene.fogDensity = look.fogDensity;
     scene.clearColor = new Color4(look.skyHorizon[0], look.skyHorizon[1], look.skyHorizon[2], 1);
-    sky.paint(look.skyTop, look.skyHorizon);
+    sky.tint(look.backdropTint);
     backdrop.tint(look.backdropTint);
     post.applyLook(look);
   };

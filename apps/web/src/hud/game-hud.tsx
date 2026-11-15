@@ -22,9 +22,12 @@ interface GameHudProps {
   onPreset(preset: LightingPresetId): void;
   onToggleSound(): void;
   onInfo(): void;
+  /** Shown only while the free camera is away from the framed view. */
+  readonly viewChanged: boolean;
+  onResetView(): void;
 }
 
-export function GameHud({ preset, showBar, muted, onAction, onPreset, onToggleSound, onInfo }: GameHudProps): ReactNode {
+export function GameHud({ preset, showBar, muted, onAction, onPreset, onToggleSound, onInfo, viewChanged, onResetView }: GameHudProps): ReactNode {
   const { locale, setLocale } = useI18n();
   const { progress } = useGameSession();
   const text = useHudText();
@@ -51,6 +54,7 @@ export function GameHud({ preset, showBar, muted, onAction, onPreset, onToggleSo
             onClick={() => onPreset(nextLightingPreset(preset))}
           />
           <IconButton icon={muted ? 'soundOff' : 'soundOn'} label={muted ? text('soundOn') : text('soundOff')} dataId="game3d-sound" onClick={onToggleSound} />
+          {viewChanged && <IconButton icon="resetView" label={text('resetView')} dataId="game3d-reset-view" onClick={onResetView} />}
           <IconButton icon="info" label={text('info')} dataId="game3d-info-open" onClick={onInfo} />
           <div className="game3d-lang">
             <LanguageSwitch locale={locale} domain={brand.primaryTenant.domain} onLocaleChange={setLocale} />
