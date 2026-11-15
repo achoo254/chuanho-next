@@ -1,12 +1,15 @@
 /**
  * The room while its incense burns: name, theme, code and live state on top, the shared burner with the countdown
- * and "light my stick", the invite and host controls, the wish box, the wishes and the people. Every action reports
+ * and "light my stick" (the panel then plays the light-up in the 3D censer), the "Hộ hương" minigame while the
+ * player's stick burns, the invite and host controls, the wish box, the wishes and the people. Every action reports
  * its refusal in one status line.
  */
 import type { RoomSnapshot } from '@chuanho/contract';
 import { type ReactNode, useState } from 'react';
+import { HudIcon } from '../../hud/hud-icons';
 import type { RoomApiError } from './room-api';
 import { RoomCenser } from './room-censer';
+import { useRoomGameText } from './room-game-messages';
 import { RoomInviteActions } from './room-invite-actions';
 import type { LiveMode } from './room-live';
 import { RoomMembers } from './room-members';
@@ -21,12 +24,27 @@ interface RoomOpenViewProps {
   readonly view: RoomView;
   readonly mode: LiveMode;
   readonly actions: RoomActions;
+  readonly onLit: () => void;
+  readonly onPlay: () => void;
 }
 
-export function RoomOpenView({ snapshot, view, mode, actions }: RoomOpenViewProps): ReactNode {
+export function RoomOpenView({ snapshot, view, mode, actions, onLit, onPlay }: RoomOpenViewProps): ReactNode {
   const t = useRoomText();
+  const game = useRoomGameText();
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const [justLit, setJustLit] = useState(false);
+  const burning = view.me?.stick ? !view.me.stick.burntOut : false;
+
+  const light = async (): Promise<void> => {
+    setBusy(true);
+    const error = await actions.light();
+    setBusy(false);
+    setNotice(error ? t(errorKey(error)) : '');
+    if (error) return;
+    setJustLit(true);
+    onLit();
+  };
 
   /** Runs an action and says why it was refused, if it was. */
   const perform = async (action: () => Promise<RoomApiError | null>): Promise<void> => {
@@ -60,13 +78,22 @@ export function RoomOpenView({ snapshot, view, mode, actions }: RoomOpenViewProp
       </p>
       <div className="room-actions">
         {view.canLight ? (
-          <button type="button" className="btn-primary" disabled={busy} onClick={() => void perform(actions.light)} data-id="room-light">
+          <button type="button" className="btn-primary" disabled={busy} onClick={() => void light()} data-id="room-light">
             {t('light')}
           </button>
         ) : (
           view.me?.stick && <p className="panel-note">{t('lit')}</p>
         )}
       </div>
+      {burning && (
+        <div className="room-actions room-play-row">
+          {justLit && <p className="panel-line room-actions-notice">{game('lit.offer')}</p>}
+          <button type="button" className={`btn-primary play-btn-icon${justLit ? ' room-play-invite' : ''}`} onClick={onPlay} data-id="room-play-game">
+            <HudIcon name="combo" size={20} />
+            {game('play')}
+          </button>
+        </div>
+      )}
       <p className="panel-note" role="status" aria-live="polite" data-id="room-notice">
         {notice}
       </p>

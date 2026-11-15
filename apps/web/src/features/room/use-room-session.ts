@@ -26,6 +26,8 @@ export interface RoomSession {
   readonly state: RoomSessionState;
   /** The server's time now, as best this device knows it. */
   readonly serverNow: number;
+  /** Server clock minus device clock, for anything that redraws more often than the shared tick. */
+  readonly offset: number;
   readonly actions: RoomActions;
 }
 
@@ -86,5 +88,5 @@ export function useRoomSession(code: string, api: RoomApi): RoomSession {
   }, [api, code]);
 
   const offset = state.phase === 'live' || state.phase === 'gone' ? state.offset : 0;
-  return { state, serverNow: deviceNow + offset, actions: { light, wish, deleteWish, report, setLocked, leave } };
+  return { state, serverNow: deviceNow + offset, offset, actions: { light, wish, deleteWish, report, setLocked, leave } };
 }

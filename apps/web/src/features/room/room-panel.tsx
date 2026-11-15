@@ -6,32 +6,52 @@
  *
  * The invite and the room belong to this panel and to the account that opened them: nothing is kept at module level,
  * and signing out or switching accounts drops both, so another account on the same page never inherits a room code.
+ *
+ * The panel also owns the room's 3D moments: the entry cutscene before the card shows (room-intro-cutscene.tsx), the
+ * censer's sticks linked to the player's own stick (use-room-incense.ts), and the "Hộ hương" minigame over the yard
+ * (room-game-overlay.tsx), seeded by the day and the room code. `?play=room-game` previews the minigame as practice.
  */
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { useAccount } from '../../account/account-context';
+import { localDateKey } from '../../game/session-day';
+import { playDemoParams } from '../../modes/play-demo-params';
 import { PanelFrame } from '../panel-frame';
 import type { PanelProps } from '../panel-registry';
 import { type RoomApiError, roomApi } from './room-api';
-import { signInHref, takeInviteCode } from './room-invite';
-import { RoomInvitePreview } from './room-invite-preview';
-import { RoomLobby } from './room-lobby';
+import { takeInviteCode } from './room-invite';
+import { RoomDemoSection } from './room-demo-section';
+import { RoomGameOverlay } from './room-game-overlay';
+import { gustSeed } from './gust-schedule';
+import { type MyStickSource, OUTSIDE_ROOM, myStickStatus } from './room-incense-timeline';
+import { RoomIntroCutscene, useRoomIntro } from './room-intro-cutscene';
+import { RoomLightUpCue } from './room-light-up-cue';
+import { type Gate, RoomGateView } from './room-gate-view';
 import { useRoomText } from './room-messages';
-import { RoomScreen } from './room-screen';
 import { errorKey } from './room-view-model';
+import { useRoomIncense } from './use-room-incense';
 import './room.css';
 
 const api = roomApi();
+/** The room code the preview seeds its wind with. */
+const PREVIEW_CODE = 'PREVIEW';
 
-type Gate =
-  | { readonly kind: 'checking' }
-  | { readonly kind: 'signed-out'; readonly invite: string | null }
-  | { readonly kind: 'offline' }
-  | { readonly kind: 'lobby'; readonly notice: string }
-  | { readonly kind: 'invite'; readonly code: string; readonly accountId: string | null }
-  | { readonly kind: 'room'; readonly code: string; readonly accountId: string | null };
+interface GameRound {
+  readonly seed: number;
+  readonly practice: boolean;
+}
 
-export function RoomPanel({ onBack }: PanelProps): ReactNode {
+const roundFor = (code: string, practice: boolean): GameRound => ({ seed: gustSeed(localDateKey(new Date()), code), practice });
+
+export function RoomPanel({ stage, onBack, registerStrike }: PanelProps): ReactNode {
   const t = useRoomText();
+  const [preview] = useState(() => playDemoParams(window.location.search).roomGame);
+  const intro = useRoomIntro(stage);
+  const [stick, setStick] = useState<MyStickSource>(OUTSIDE_ROOM);
+  // The preview opens its round right after the cutscene, once; a real room opens it from the room view.
+  const [game, setGame] = useState<GameRound | null>(() => (preview ? roundFor(PREVIEW_CODE, true) : null));
+  const shownGame = intro.running ? null : game;
+  const incense = useRoomIncense(stage, stick, !intro.running && game === null);
+  const closeGame = useCallback(() => setGame(null), []);
   const accountId = useAccount().user?.id ?? null;
   const [gate, setGate] = useState<Gate>({ kind: 'checking' });
   const [attempt, setAttempt] = useState(0);
@@ -77,6 +97,8 @@ export function RoomPanel({ onBack }: PanelProps): ReactNode {
     setGate({ kind: 'lobby', notice: '' });
   }, []);
 
+  const playIn = (code: string): void => setGame(roundFor(code, myStickStatus(stick, Date.now()).kind !== 'burning'));
+
   const retry = (): void => {
     setGate({ kind: 'checking' });
     setAttempt((count) => count + 1);
@@ -88,37 +110,21 @@ export function RoomPanel({ onBack }: PanelProps): ReactNode {
   const shown: Gate = stale ? { kind: 'checking' } : gate;
 
   return (
-    <PanelFrame title={t('title')} onBack={onBack} dataId="room-panel">
-      {shown.kind !== 'room' && <p className="panel-note">{t('intro')}</p>}
-      {shown.kind === 'checking' && (
-        <p className="panel-line" role="status">
-          {t('checking')}
-        </p>
-      )}
-      {shown.kind === 'signed-out' && (
-        <div className="room-section" data-id="room-sign-in">
-          <p className="panel-line">{t('signInNeeded')}</p>
-          <div className="room-actions">
-            <a className="btn-primary room-link-button-solid" href={signInHref(shown.invite)} data-id="room-sign-in-link">
-              {t('signIn')}
-            </a>
-          </div>
-        </div>
-      )}
-      {shown.kind === 'offline' && (
-        <div className="room-section" role="alert">
-          <p className="panel-line">{t('offline')}</p>
-          <div className="room-actions">
-            <button type="button" className="btn-secondary" onClick={retry} data-id="room-retry">
-              {t('retry')}
-            </button>
-          </div>
-        </div>
-      )}
-      {shown.kind === 'invite' && <RoomInvitePreview code={shown.code} onJoin={enter} onSkip={skipInvite} />}
-      {shown.kind === 'lobby' && <RoomLobby api={api} notice={shown.notice} onEnter={enter} />}
-      {shown.kind === 'room' && <RoomScreen key={shown.code} code={shown.code} api={api} onExit={exit} />}
-      <p className="panel-note">{t('privacy')}</p>
-    </PanelFrame>
+    <>
+      {intro.running && <RoomIntroCutscene intro={intro} registerStrike={registerStrike} />}
+      {incense.lightingUp && <RoomLightUpCue />}
+      {/* The card waits behind the cutscenes and the minigame; the room inside it stays connected. */}
+      <div className="room-frame" hidden={intro.running || incense.lightingUp || shownGame !== null}>
+        <PanelFrame title={t('title')} onBack={onBack} dataId="room-panel">
+          {preview ? (
+            <RoomDemoSection onPlay={() => setGame(roundFor(PREVIEW_CODE, true))} onLight={incense.celebrateLight} />
+          ) : (
+            <RoomGateView gate={shown} api={api} retry={retry} enter={enter} exit={exit} skipInvite={skipInvite} onStick={setStick} onLit={incense.celebrateLight} onPlay={playIn} />
+          )}
+          <p className="panel-note">{t('privacy')}</p>
+        </PanelFrame>
+      </div>
+      {shownGame && <RoomGameOverlay stage={stage} seed={shownGame.seed} practice={shownGame.practice} baseBurn={incense.baseBurn} onClose={closeGame} />}
+    </>
   );
 }

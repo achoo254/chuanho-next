@@ -1,0 +1,278 @@
+/* "Hộ hương" over the 3D yard: the two tap halves, the wind ribbons from each edge, the shield and gust flashes, the
+   flame points HUD and the judgement word. Colours only from tokens.css. The layer lets the censer show through. */
+
+.room-game {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.room-game .play-card,
+.room-game .play-bar > * {
+  pointer-events: auto;
+}
+
+/* The two halves of the screen are the two shields. */
+.room-game-half {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  transition: background var(--dur-fast) var(--ease-standard);
+}
+.room-game-half.is-left {
+  left: 0;
+}
+.room-game-half.is-right {
+  right: 0;
+}
+.room-game-half:active {
+  background: var(--c-start-veil);
+}
+.room-game-half:focus-visible {
+  outline: 3px solid var(--c-primary);
+  outline-offset: -6px;
+}
+
+/* An edge of the screen glows while a gust comes from it. */
+.room-wind-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 22%;
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease-standard);
+}
+.room-wind-edge.is-left {
+  left: 0;
+  background: linear-gradient(90deg, var(--c-smoke), transparent);
+}
+.room-wind-edge.is-right {
+  right: 0;
+  background: linear-gradient(270deg, var(--c-smoke), transparent);
+}
+.room-wind-edge.is-on {
+  opacity: 1;
+}
+
+/* One gust: streaks sweeping toward the middle, chevrons and a ring closing on the landing moment. */
+.room-wind {
+  position: absolute;
+  top: 18%;
+  bottom: 22%;
+  width: 50%;
+}
+.room-wind.is-left {
+  left: 0;
+}
+.room-wind.is-right {
+  right: 0;
+}
+.room-wind-streak {
+  position: absolute;
+  width: 46%;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, transparent, var(--c-text) 60%, transparent);
+  opacity: 0;
+  animation: room-wind-in-left var(--wind-ms) linear both;
+}
+.room-wind.is-right .room-wind-streak {
+  right: 0;
+  animation-name: room-wind-in-right;
+}
+.room-wind-chevrons {
+  position: absolute;
+  top: 50%;
+  color: var(--c-text);
+  font-size: 54px;
+  font-weight: 900;
+  letter-spacing: -0.1em;
+  text-shadow: 0 2px 10px var(--c-drop-shadow);
+  transform: translateY(-50%);
+  animation: room-wind-pulse 300ms var(--ease-standard) infinite alternate;
+}
+.room-wind.is-left .room-wind-chevrons {
+  left: var(--space-4);
+}
+.room-wind.is-right .room-wind-chevrons {
+  right: var(--space-4);
+}
+.room-wind-ring {
+  position: absolute;
+  top: 50%;
+  width: 96px;
+  height: 96px;
+  margin-top: -48px;
+  border: 4px solid var(--c-primary);
+  border-radius: var(--radius-full);
+  animation: room-wind-ring var(--wind-ms) linear both;
+  animation-delay: var(--wind-delay);
+}
+.room-wind.is-left .room-wind-ring {
+  right: 18%;
+}
+.room-wind.is-right .room-wind-ring {
+  left: 18%;
+}
+
+/* A shield flares warm on its side; a gust that got through dims it. */
+.room-game-flash {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 60%;
+  animation: room-game-flash 600ms var(--ease-standard) forwards;
+}
+.room-game-flash.is-left {
+  left: 0;
+}
+.room-game-flash.is-right {
+  right: 0;
+}
+.room-game-flash.is-left.is-shield {
+  background: radial-gradient(60% 50% at 100% 55%, var(--c-ember-glow), transparent 70%);
+}
+.room-game-flash.is-right.is-shield {
+  background: radial-gradient(60% 50% at 0% 55%, var(--c-ember-glow), transparent 70%);
+}
+.room-game-flash.is-gust {
+  background: linear-gradient(90deg, var(--c-vignette), transparent);
+}
+.room-game-flash.is-right.is-gust {
+  background: linear-gradient(270deg, var(--c-vignette), transparent);
+}
+
+/* Judgement word over the middle, above the censer. */
+.room-game-judge {
+  top: 40%;
+  left: 50%;
+}
+
+.room-game-hud {
+  position: absolute;
+  /* Under the yard HUD's top row of counters and buttons. */
+  top: calc(max(var(--space-3), env(safe-area-inset-top, 0px)) + 56px);
+  left: 50%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  width: max-content;
+  max-width: calc(100vw - 2 * var(--space-3));
+  transform: translateX(-50%);
+}
+.room-game-flame {
+  display: inline-flex;
+  color: var(--c-text-muted);
+  opacity: 0.45;
+  transition: opacity var(--dur-base) var(--ease-standard);
+}
+.room-game-flame.is-lit {
+  color: var(--c-ember);
+  opacity: 1;
+}
+.room-game-flames .hud-icon {
+  color: inherit;
+}
+.room-game-combo {
+  color: var(--c-primary);
+  animation: room-game-bump 260ms var(--ease-standard);
+}
+
+.room-game-stars {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+.room-game-star {
+  color: var(--c-text-muted);
+  opacity: 0.4;
+}
+.room-game-star.is-on {
+  color: var(--c-primary);
+  opacity: 1;
+  animation: room-game-star 520ms var(--ease-standard) both;
+}
+
+@keyframes room-wind-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-60%);
+  }
+  30% {
+    opacity: 0.9;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(150%);
+  }
+}
+@keyframes room-wind-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(60%);
+  }
+  30% {
+    opacity: 0.9;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-150%);
+  }
+}
+@keyframes room-wind-pulse {
+  to {
+    opacity: 0.55;
+  }
+}
+@keyframes room-wind-ring {
+  from {
+    opacity: 0.2;
+    transform: scale(2.2);
+  }
+  to {
+    opacity: 1;
+    transform: scale(0.7);
+  }
+}
+@keyframes room-game-flash {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes room-game-bump {
+  50% {
+    transform: scale(1.18);
+  }
+}
+@keyframes room-game-star {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-30deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-wind-streak,
+  .room-wind-chevrons,
+  .room-game-combo,
+  .room-game-star.is-on {
+    animation: none;
+  }
+  .room-wind-streak {
+    opacity: 0.6;
+  }
+}

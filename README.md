@@ -72,6 +72,7 @@ Bản 2D cũ đã gỡ hẳn: trang chỉ còn bản 3D. Babylon nằm trong cá
 |---|---|
 | `renderer=webgl2` | Bỏ qua WebGPU, chạy WebGL2 để so hai đường |
 | `quality=low\|medium\|high\|ultra` | Giữ cố định một mức chất lượng, tắt bộ giảm chất lượng tự động (để thử và chụp ảnh) |
+| `play=room-game` | Mở thử cảnh mở đầu và minigame "Hộ hương" của Phòng giải nghiệp mà không cần máy chủ hay đăng nhập |
 | `light=lanternNight\|mistyMorning` | Mở ở giờ khác (mặc định hoàng hôn); nút mặt trời trên HUD đổi giờ mượt |
 
 Canvas ghi `data-backend`, `data-quality`, `data-fps` để kiểm nhanh trong DevTools.

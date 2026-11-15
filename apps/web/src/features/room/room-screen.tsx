@@ -1,10 +1,12 @@
 /**
  * One room from joining to its end: a short wait, the burning room (room-open-view.tsx), the ashes with the share
- * card (room-ashes.tsx), or a closed room. Refusals to get in, a lost session and leaving go back up to the panel.
+ * card (room-ashes.tsx), or a closed room. Refusals to get in, a lost session and leaving go back up to the panel,
+ * and so does the player's own stick, which the panel shows in the 3D censer.
  */
 import { type ReactNode, useEffect } from 'react';
 import type { RoomApi, RoomApiError } from './room-api';
 import { RoomAshes } from './room-ashes';
+import { type MyStickSource, OUTSIDE_ROOM } from './room-incense-timeline';
 import { useRoomText } from './room-messages';
 import { RoomOpenView } from './room-open-view';
 import { roomView } from './room-view-model';
@@ -15,11 +17,27 @@ interface RoomScreenProps {
   readonly api: RoomApi;
   /** Back to the lobby, with the error that ended the room (null after leaving or for a closed room). */
   readonly onExit: (error: RoomApiError | null) => void;
+  /** The player's own stick, whenever it changes (outside the room once this screen closes). */
+  readonly onStick: (source: MyStickSource) => void;
+  /** The player's stick was just lit. */
+  readonly onLit: () => void;
+  readonly onPlay: () => void;
 }
 
-export function RoomScreen({ code, api, onExit }: RoomScreenProps): ReactNode {
+export function RoomScreen({ code, api, onExit, onStick, onLit, onPlay }: RoomScreenProps): ReactNode {
   const t = useRoomText();
-  const { state, serverNow, actions } = useRoomSession(code, api);
+  const { state, serverNow, offset, actions } = useRoomSession(code, api);
+
+  const snapshot = state.phase === 'live' || state.phase === 'gone' ? state.snapshot : null;
+  // A room seen to its ashes still counts: a burnt-out stick is put away rather than replaced by the greeting.
+  const inRoom = snapshot !== null;
+  const myStick = snapshot?.members.find((member) => member.id === snapshot.meId)?.stick ?? null;
+  const litAt = myStick?.litAt ?? null;
+  const burnsOutAt = myStick?.burnsOutAt ?? null;
+  useEffect(() => {
+    onStick({ inRoom, stick: litAt !== null && burnsOutAt !== null ? { litAt, burnsOutAt } : null, offset });
+  }, [onStick, inRoom, litAt, burnsOutAt, offset]);
+  useEffect(() => () => onStick(OUTSIDE_ROOM), [onStick]);
 
   // Could not get in, or the session ended: the panel decides what to show instead.
   const exitError = state.phase === 'failed' ? state.error : state.phase === 'gone' && state.error?.kind === 'signed-out' ? state.error : null;
@@ -67,7 +85,7 @@ export function RoomScreen({ code, api, onExit }: RoomScreenProps): ReactNode {
   }
   return (
     <>
-      <RoomOpenView snapshot={state.snapshot} view={view} mode={state.mode} actions={actions} />
+      <RoomOpenView snapshot={state.snapshot} view={view} mode={state.mode} actions={actions} onLit={onLit} onPlay={onPlay} />
       <div className="room-actions">
         <button type="button" className="btn-secondary" onClick={() => void leave()} data-id="room-leave">
           {t('leave')}
