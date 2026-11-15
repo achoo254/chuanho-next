@@ -44,3 +44,12 @@ export function createMusicDecks(ctx: AudioContext, bus: AudioNode): readonly [M
     return null;
   }
 }
+
+/** Ramps a deck's fade gain from where it is now to `to` over `seconds`. */
+export function fadeDeck(deck: MusicDeck, to: number, seconds: number): void {
+  const { gain, context } = deck.gain;
+  const now = context.currentTime;
+  gain.cancelScheduledValues(now);
+  gain.setValueAtTime(gain.value, now);
+  gain.linearRampToValueAtTime(to, now + seconds);
+}

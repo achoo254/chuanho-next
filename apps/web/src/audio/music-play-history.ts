@@ -8,6 +8,9 @@
  *   3. otherwise (a library shorter than the gap) the track heard longest ago.
  * With a library longer than the gap, rule 2 always has candidates, so no track repeats within `minGapS` of
  * listening, however often the page reloads.
+ *
+ * An optional `preferred` test (the radio's mode asks for night or morning tracks) narrows rules 1 and 2 to the
+ * preferred candidates when there are any; it never widens them, so the no-repeat promise holds whatever is preferred.
  */
 
 export interface PlayHistory {
@@ -26,15 +29,22 @@ export interface PickableTrack {
   readonly id: string;
 }
 
+const NOTHING_PREFERRED = (): boolean => false;
+
 /** The next track to play, or null for an empty library. `random` returns [0, 1). */
 export function pickNextTrack<T extends PickableTrack>(
   tracks: readonly T[],
   history: PlayHistory,
   random: () => number = Math.random,
   minGapS: number = MIN_REPEAT_GAP_S,
+  preferred: (track: T) => boolean = NOTHING_PREFERRED,
 ): T | null {
   if (tracks.length === 0) return null;
-  const pickFrom = (list: readonly T[]): T | null => list[Math.min(list.length - 1, Math.floor(random() * list.length))] ?? null;
+  const pickFrom = (candidates: readonly T[]): T | null => {
+    const liked = candidates.filter(preferred);
+    const list = liked.length > 0 ? liked : candidates;
+    return list[Math.min(list.length - 1, Math.floor(random() * list.length))] ?? null;
+  };
   const fresh = tracks.filter((track) => history.last[track.id] === undefined);
   if (fresh.length > 0) return pickFrom(fresh);
   const rested = tracks.filter((track) => history.clock - (history.last[track.id] ?? 0) >= minGapS);

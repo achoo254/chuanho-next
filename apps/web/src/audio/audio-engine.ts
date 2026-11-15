@@ -27,8 +27,14 @@ interface Engine {
   readonly ctx: AudioContext;
   /** Sound effects (wooden fish, bell, bowl, chime). */
   readonly sfx: GainNode;
-  /** Music (the library, or the pad and pulse), kept below the effects. */
+  /** Music (the library, or the pad and pulse), kept below the effects. Modes duck it (the chanting voice). */
   readonly music: GainNode;
+  /**
+   * The music's final level after `music`, at 1 unless a screen turns the whole music down for a while (the radio's
+   * gentler sleep music and its sleep-timer fade, see music-master-level.ts). Separate from `music`, so a mode's
+   * ducking and the radio's level never overwrite each other.
+   */
+  readonly musicMaster: GainNode;
   /** Decoded samples by URL. */
   readonly buffers: Map<string, AudioBuffer>;
   /** The music library's two media decks, or null where media elements cannot feed WebAudio. */
@@ -74,10 +80,12 @@ export function unlockAudio(): void {
     const sfx = ctx.createGain();
     sfx.gain.value = 0.9;
     sfx.connect(ctx.destination);
+    const musicMaster = ctx.createGain();
+    musicMaster.connect(ctx.destination);
     const music = ctx.createGain();
     music.gain.value = 0.55;
-    music.connect(ctx.destination);
-    engine = { ctx, sfx, music, buffers: new Map(), musicDecks: createMusicDecks(ctx, music) };
+    music.connect(musicMaster);
+    engine = { ctx, sfx, music, musicMaster, buffers: new Map(), musicDecks: createMusicDecks(ctx, music) };
     // A one-sample silent buffer started in the gesture is what finally unmutes iOS Safari.
     const silent = ctx.createBufferSource();
     silent.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);

@@ -114,6 +114,39 @@ describe('pickNextTrack', () => {
     history = addListened(markStarted(history, 'b'), 10);
     expect(pickNextTrack(tracks, history, () => 0.999999)?.id).toBe('a');
   });
+
+  it('prefers the preferred fresh tracks, and takes any when none is preferred', () => {
+    const tracks = [{ id: 'day' }, { id: 'night' }, { id: 'dawn' }];
+    const isNight = (track: { id: string }): boolean => track.id === 'night';
+    for (const r of [0, 0.5, 0.99]) expect(pickNextTrack(tracks, EMPTY_HISTORY, () => r, MIN_REPEAT_GAP_S, isNight)?.id).toBe('night');
+    expect(pickNextTrack(tracks, EMPTY_HISTORY, () => 0, MIN_REPEAT_GAP_S, () => false)?.id).toBe('day');
+  });
+
+  it('never repeats a preferred track early to honour the preference', () => {
+    // The preferred track was just heard; the other one has rested long enough.
+    let history = addListened(markStarted(EMPTY_HISTORY, 'old'), 10);
+    history = addListened(markStarted(history, 'liked'), 100);
+    const next = pickNextTrack([{ id: 'old' }, { id: 'liked' }], history, () => 0.5, 105, (track) => track.id === 'liked');
+    expect(next?.id).toBe('old');
+  });
+
+  it('keeps the four-hour promise while a preference narrows the picks', () => {
+    const tracks = library(4.2 * 3600, seeded(5));
+    const random = seeded(3);
+    const isEven = (track: Track): boolean => Number(track.id.slice(1)) % 2 === 0;
+    let history: PlayHistory = EMPTY_HISTORY;
+    const startedAt = new Map<string, number>();
+    let minGap = Infinity;
+    while (history.clock < 48 * 3600) {
+      const track = pickNextTrack(tracks, history, random, MIN_REPEAT_GAP_S, isEven);
+      if (!track) throw new Error('empty pick');
+      const before = startedAt.get(track.id);
+      if (before !== undefined) minGap = Math.min(minGap, history.clock - before);
+      startedAt.set(track.id, history.clock);
+      history = addListened(markStarted(history, track.id), track.duration);
+    }
+    expect(minGap).toBeGreaterThanOrEqual(MIN_REPEAT_GAP_S);
+  });
 });
 
 describe('history bookkeeping', () => {

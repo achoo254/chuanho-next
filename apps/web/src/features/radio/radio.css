@@ -1,0 +1,127 @@
+/* The radio screen's own parts; the card, chips and lists come from panel.css. Colours and sizes only from
+   tokens.css; every control at least --tap tall. */
+
+.radio-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.radio-choice .hud-icon {
+  flex: none;
+}
+
+/* Play/pause, next track, and what is playing. */
+.radio-player {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.radio-play {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: calc(var(--tap) + var(--space-3));
+  height: calc(var(--tap) + var(--space-3));
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--c-primary-solid);
+  color: var(--c-on-primary);
+  cursor: pointer;
+  box-shadow: var(--shadow-gold);
+  transition: background var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard);
+}
+.radio-play:hover {
+  background: var(--c-primary-solid-hover);
+}
+.radio-play:active {
+  transform: scale(0.95);
+}
+.radio-play:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+.radio-now {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  margin: 0;
+}
+
+.radio-group-icon {
+  display: inline-grid;
+  place-items: center;
+  min-height: var(--tap);
+  color: var(--c-primary);
+}
+
+.radio-focus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.radio-dim {
+  justify-self: start;
+}
+
+/* The countdown in the bottom bar: as tall as the back button next to it. */
+.radio-chip {
+  min-height: var(--tap);
+}
+
+/* The dim screen of the sleep mode: a dark layer over everything, one tap (or Enter/Space) wakes it. */
+.radio-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: end center;
+  width: 100%;
+  padding: 0 var(--space-5) max(var(--space-7), env(safe-area-inset-bottom, 0px));
+  border: 0;
+  background: var(--c-bg-deep);
+  opacity: 0.94;
+  color: var(--c-text-muted);
+  font: inherit;
+  cursor: pointer;
+  animation: radio-veil-in var(--dur-pop) var(--ease-standard);
+}
+.radio-veil:focus-visible {
+  outline: none;
+  box-shadow: inset var(--shadow-focus);
+}
+.radio-veil-text {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: center;
+  font-size: 13px;
+  opacity: 0.6;
+}
+.radio-veil-status {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes radio-veil-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.94;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radio-play,
+  .radio-veil {
+    transition: none;
+    animation: none;
+  }
+  .radio-play:active {
+    transform: none;
+  }
+}
