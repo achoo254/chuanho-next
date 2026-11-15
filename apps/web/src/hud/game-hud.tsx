@@ -15,6 +15,8 @@ import { actionKey, presetKey, useHudText } from './hud-messages';
 
 interface GameHudProps {
   readonly preset: LightingPresetId;
+  /** The corner icon bar shows in the yard; inside a play mode the mode's own bar takes its place. */
+  readonly showBar: boolean;
   readonly muted: boolean;
   onAction(action: WorldAction): void;
   onPreset(preset: LightingPresetId): void;
@@ -22,7 +24,7 @@ interface GameHudProps {
   onInfo(): void;
 }
 
-export function GameHud({ preset, muted, onAction, onPreset, onToggleSound, onInfo }: GameHudProps): ReactNode {
+export function GameHud({ preset, showBar, muted, onAction, onPreset, onToggleSound, onInfo }: GameHudProps): ReactNode {
   const { locale, setLocale } = useI18n();
   const { progress } = useGameSession();
   const text = useHudText();
@@ -55,6 +57,7 @@ export function GameHud({ preset, muted, onAction, onPreset, onToggleSound, onIn
           </div>
         </div>
       </div>
+      {showBar && (
       <nav className="game3d-bar" aria-label={text('shortcuts')} data-id="game3d-bar">
         {SHORTCUT_BAR_ACTIONS.map((action) => (
           <IconButton
@@ -68,6 +71,7 @@ export function GameHud({ preset, muted, onAction, onPreset, onToggleSound, onIn
           />
         ))}
       </nav>
+      )}
     </>
   );
 }

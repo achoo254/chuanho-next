@@ -10,6 +10,7 @@ import '@babylonjs/core/Layers/effectLayerSceneComponent';
 import { Scene } from '@babylonjs/core/scene';
 import { createCameraSwayInput } from '../input/camera-sway-input';
 import { createWorldPicking } from '../input/world-picking';
+import { type PlayStage, createPlayStage } from '../modes/play-stage';
 import { buildDiorama } from '../scene/build-diorama';
 import { createDioramaCamera } from '../scene/diorama-camera';
 import type { LightingPresetId } from '../scene/lighting-presets';
@@ -49,6 +50,10 @@ export interface BabylonWorld {
   pulse(prop: InteractivePropId): void;
   setFocus(prop: InteractivePropId | null): void;
   setInputEnabled(enabled: boolean): void;
+  /** The tappable prop under a screen point (CSS pixels), or null. */
+  pickPropAt(clientX: number, clientY: number): InteractivePropId | null;
+  /** The play modes' handle on the scene: character, wooden fish, incense, note orbs, share shot. */
+  readonly stage: PlayStage;
   dispose(): void;
 }
 
@@ -103,8 +108,11 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
     const diorama = await buildDiorama(scene, palette, signal, (done, total) => options.onProgress(0.4 + (done / total) * 0.45));
     cleanups.push(() => diorama.dispose());
     checkAborted();
+    const stage = await createPlayStage({ scene, engine, view, focusAt: (distance) => post.focusAt(distance), diorama, palette, reducedMotion, signal });
+    cleanups.push(() => stage.dispose());
+    checkAborted();
 
-    const lighting = createSceneLighting({ scene, palette, sky, post, shadowCasters: diorama.shadowCasters, reducedMotion }, options.initialPreset);
+    const lighting = createSceneLighting({ scene, palette, sky, post, shadowCasters: [...diorama.shadowCasters, ...stage.shadowCasters], reducedMotion }, options.initialPreset);
     cleanups.push(() => lighting.dispose());
     const highlight = new HighlightLayer('hover-glow', scene, { blurHorizontalSize: 0.8, blurVerticalSize: 0.8 });
     highlight.innerGlow = false;
@@ -142,9 +150,11 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
       timeMs += deltaMs;
       const width = canvas.clientWidth;
       const height = canvas.clientHeight;
-      post.focusAt(view.update(height > 0 ? width / height : 1, sway.update(deltaMs), timeMs));
+      // The share shot holds the camera while it renders; otherwise the framing follows the window and the mode.
+      if (!stage.capturing) post.focusAt(view.update(height > 0 ? width / height : 1, sway.update(deltaMs), timeMs));
       lighting.update(deltaMs);
       pulse.update(deltaMs);
+      stage.update(deltaMs);
       scene.render();
       scaler.onFrame(deltaMs);
       fpsWindowMs += deltaMs;
@@ -180,6 +190,8 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
       pulse: (prop) => pulse.start(prop),
       setFocus: (prop) => picking.setFocus(prop),
       setInputEnabled: (enabled) => picking.setEnabled(enabled),
+      pickPropAt: (x, y) => picking.pickPropAt(x, y),
+      stage,
       dispose: disposeAll,
     };
     return { kind: 'ready', world };

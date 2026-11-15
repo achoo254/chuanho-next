@@ -1,6 +1,6 @@
 /**
  * Small floating feedback over the scene: the toast that confirms a picked action with its icons (plus an hourglass
- * for what is coming soon), and the hint bubble that names the prop under the mouse. Both carry their words for
+ * for what is coming soon) or, when a prop offers several play modes, lets the player pick one; and the hint bubble that names the prop under the mouse. Both carry their words for
  * screen readers; on screen they are icons and one short name.
  */
 import type { ReactNode } from 'react';
@@ -11,16 +11,27 @@ import { actionKey, propKey, useHudText } from './hud-messages';
 export interface ToastContent {
   readonly id: number;
   readonly actions: readonly WorldAction[];
+  /** Set when the player should pick one of the actions (each icon becomes a button). */
+  readonly choose?: boolean;
 }
 
-export function ActionToast({ toast }: { toast: ToastContent | null }): ReactNode {
+export function ActionToast({ toast, onChoose }: { toast: ToastContent | null; onChoose?: (action: WorldAction) => void }): ReactNode {
   const text = useHudText();
   const names = toast ? toast.actions.map((action) => text(actionKey(action))).join(', ') : '';
   const soon = toast ? toast.actions.some(isComingSoon) : false;
   return (
     // The live region stays mounted so each new pick is announced.
     <div className="game3d-toast-region" role="status" aria-live="polite" data-id="game3d-toast">
-      {toast && (
+      {toast?.choose && onChoose && (
+        <div key={toast.id} className="game3d-toast game3d-toast-choose">
+          {toast.actions.map((action) => (
+            <button key={action} type="button" className="hud-btn" aria-label={text(actionKey(action))} data-tip={text(actionKey(action))} data-id={`game3d-choose-${action}`} onClick={() => onChoose(action)}>
+              <HudIcon name={ACTION_ICONS[action]} size={26} />
+            </button>
+          ))}
+        </div>
+      )}
+      {toast && !toast.choose && (
         <div key={toast.id} className="game3d-toast">
           {toast.actions.map((action) => (
             <span key={action} className="game3d-toast-icon">

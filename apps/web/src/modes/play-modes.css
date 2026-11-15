@@ -1,0 +1,348 @@
+/* The 3D play modes over the canvas: the strike pad, the mode bar, compact game cards, the sutra paper and the
+   skins row. Loaded with the 3D chunk only; colours from tokens.css; every control at least --tap tall. */
+
+/* The whole screen is the wooden fish in the drumming modes; the hold pad catches presses on the censer. */
+.play-strike-pad,
+.play-hold-pad {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
+.play-strike-pad:focus-visible {
+  outline: 3px solid var(--c-primary);
+  outline-offset: -6px;
+}
+
+/* The mode's own bar, where the yard's shortcut bar sits: back, chips, toggles. */
+.play-bar {
+  position: absolute;
+  bottom: max(var(--space-3), env(safe-area-inset-bottom, 0px));
+  left: max(var(--space-3), env(safe-area-inset-left, 0px));
+  right: max(var(--space-3), env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+.play-bar > * {
+  pointer-events: auto;
+}
+
+.play-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--c-hud-panel);
+  color: var(--c-text);
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.play-chip .hud-icon {
+  color: var(--c-primary);
+}
+
+.play-battery {
+  position: relative;
+  width: min(140px, 28vw);
+  height: 10px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--c-hud-track);
+}
+.play-battery-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--c-primary-solid);
+  transform-origin: left center;
+  transition: transform var(--dur-base) var(--ease-standard);
+}
+
+.play-hold-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: conic-gradient(var(--c-ember) calc(var(--burnt, 0) * 360deg), var(--c-hud-panel) 0);
+  color: var(--c-text);
+  cursor: pointer;
+  touch-action: none;
+}
+.play-hold-btn::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: var(--radius-full);
+  background: var(--c-hud-panel);
+}
+.play-hold-btn .hud-icon {
+  position: relative;
+}
+.play-hold-btn.is-holding {
+  transform: scale(0.94);
+}
+.play-hold-btn:focus-visible {
+  outline: 3px solid var(--c-primary);
+  outline-offset: 2px;
+}
+
+.play-hint {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  max-width: min(420px, 86vw);
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--c-scrim-soft);
+  color: var(--c-text);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Words rising from the wooden fish: the anchor is moved to its screen point every frame. */
+.play-float-anchor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* ---------- compact game cards ---------- */
+
+.play-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  gap: var(--space-3);
+  justify-items: center;
+  width: min(380px, calc(100vw - 2 * var(--space-4)));
+  max-height: calc(100dvh - 160px);
+  overflow-y: auto;
+  padding: var(--space-5);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  background: var(--c-scrim);
+  color: var(--c-text);
+  text-align: center;
+  transform: translate(-50%, -55%);
+  animation: game3d-pop var(--dur-pop) var(--ease-standard);
+}
+.play-card-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--c-primary);
+}
+.play-card-line {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.play-card-note {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+.play-card-note:empty {
+  display: none;
+}
+.play-card-actions,
+.play-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.play-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.play-quest {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  text-align: left;
+}
+.play-quest-title {
+  margin-bottom: var(--space-1);
+  color: var(--c-primary);
+  font-size: 13px;
+  font-weight: 800;
+}
+.play-quest-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.play-share-preview {
+  display: block;
+  width: auto;
+  height: min(52dvh, 520px);
+  max-width: 100%;
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 28px var(--c-drop-shadow);
+}
+
+/* ---------- the floating sutra paper ---------- */
+
+.play-paper {
+  position: absolute;
+  top: max(72px, calc(env(safe-area-inset-top, 0px) + 64px));
+  left: 50%;
+  width: min(560px, calc(100vw - 2 * var(--space-4)));
+  max-height: 38dvh;
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-5);
+  border: 2px solid var(--c-paper-edge);
+  border-radius: var(--radius-md);
+  background: var(--c-paper);
+  color: var(--c-paper-ink);
+  box-shadow: 0 14px 40px var(--c-drop-shadow);
+  transform: translateX(-50%) rotate(-0.6deg);
+  pointer-events: none;
+}
+.play-paper-source {
+  margin: 0 0 var(--space-2);
+  color: var(--c-paper-ink-dim);
+  font-size: 13px;
+  font-weight: 600;
+}
+.play-paper-line {
+  margin: 0 0 var(--space-1);
+  font-size: clamp(17px, 2.2vw, 21px);
+  line-height: 1.55;
+}
+.play-word {
+  color: var(--c-paper-ink-dim);
+  transition: color var(--dur-base) var(--ease-standard);
+}
+.play-word.is-lit {
+  color: var(--c-paper-ink);
+  font-weight: 600;
+}
+.play-word.is-current {
+  color: var(--c-paper-lit);
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+/* ---------- wooden fish skins ---------- */
+
+.play-skins {
+  position: absolute;
+  top: max(72px, calc(env(safe-area-inset-top, 0px) + 64px));
+  right: max(var(--space-3), env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-1);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--c-scrim-soft);
+}
+.play-skin {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--radius-full);
+  background: var(--c-hud-panel);
+  color: var(--c-text-muted);
+  cursor: pointer;
+}
+.play-skin[aria-pressed='true'] {
+  border-color: var(--c-primary);
+}
+.play-skin:disabled {
+  cursor: not-allowed;
+}
+.play-skin [data-tip]:hover::after,
+.play-skins [data-tip]:hover::after {
+  top: 50%;
+  right: calc(100% + var(--space-2));
+  left: auto;
+  transform: translateY(-50%);
+}
+.play-skin-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: var(--c-scene-mo);
+}
+.play-skin-carved .play-skin-swatch {
+  background: var(--c-scene-lacquer);
+}
+.play-skin-fish .play-skin-swatch {
+  background: var(--c-primary-solid);
+}
+
+.game3d-toast-choose {
+  pointer-events: auto;
+}
+
+@media (max-width: 599px) {
+  .play-card {
+    transform: translate(-50%, -50%);
+  }
+  /* Below the two rows of HUD controls a phone shows at the top. */
+  .play-paper,
+  .play-skins {
+    top: max(112px, calc(env(safe-area-inset-top, 0px) + 104px));
+  }
+  .play-paper {
+    max-height: 32dvh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play-card {
+    animation: none;
+  }
+  .play-paper {
+    transform: translateX(-50%);
+  }
+  .play-word {
+    transition: none;
+  }
+}
+
+/* On wide screens the paper floats to the left, leaving the character and the sutra stand in view. */
+@media (min-width: 900px) {
+  .play-paper {
+    left: max(var(--space-5), env(safe-area-inset-left, 0px));
+    width: min(440px, 36vw);
+    max-height: 60dvh;
+    transform: rotate(-0.6deg);
+  }
+}

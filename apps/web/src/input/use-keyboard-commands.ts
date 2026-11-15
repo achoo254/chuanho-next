@@ -10,7 +10,8 @@ function focusIsOnControl(target: EventTarget | null): boolean {
   return target.closest('button, a[href], input, select, textarea, summary, [contenteditable="true"], dialog') !== null;
 }
 
-export function useKeyboardCommands(enabled: boolean, onCommand: (command: KeyCommand) => void): void {
+/** `onCommand` also gets the key event's time stamp (the rhythm mode judges a strike by when the key went down). */
+export function useKeyboardCommands(enabled: boolean, onCommand: (command: KeyCommand, eventTimeMs: number) => void): void {
   const handler = useRef(onCommand);
   useEffect(() => {
     handler.current = onCommand;
@@ -26,7 +27,7 @@ export function useKeyboardCommands(enabled: boolean, onCommand: (command: KeyCo
       if (command.kind === 'action') event.preventDefault();
       // Holding a key down repeats a strike, but not a menu pick.
       if (event.repeat && !(command.kind === 'action' && command.action === 'strike')) return;
-      handler.current(command);
+      handler.current(command, event.timeStamp);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);

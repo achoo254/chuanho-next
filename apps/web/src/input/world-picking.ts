@@ -29,6 +29,8 @@ export interface WorldPickingOptions {
 export interface WorldPicking {
   /** Glows a prop without the pointer (the corner bar, the keyboard); null clears it. */
   setFocus(prop: InteractivePropId | null): void;
+  /** The tappable prop under a screen point (CSS pixels), whether or not picking is enabled. */
+  pickPropAt(clientX: number, clientY: number): InteractivePropId | null;
   /** Turns picking off while a dialog covers the scene. */
   setEnabled(enabled: boolean): void;
   dispose(): void;
@@ -58,11 +60,12 @@ export function createWorldPicking(options: WorldPickingOptions): WorldPicking {
   };
 
   /** The canvas-relative point of a pointer event, in CSS pixels (what scene.pick expects). */
-  const pickAt = (event: PointerEvent): InteractivePropId | null => {
+  const pickPoint = (clientX: number, clientY: number): InteractivePropId | null => {
     const rect = canvas.getBoundingClientRect();
-    const hit = scene.pick(event.clientX - rect.left, event.clientY - rect.top, (mesh) => mesh.isPickable && mesh.isEnabled());
+    const hit = scene.pick(clientX - rect.left, clientY - rect.top, (mesh) => mesh.isPickable && mesh.isEnabled());
     return hit.hit ? propOfNode(hit.pickedMesh) : null;
   };
+  const pickAt = (event: PointerEvent): InteractivePropId | null => pickPoint(event.clientX, event.clientY);
 
   const setHovered = (prop: InteractivePropId | null, event: PointerEvent | null): void => {
     if (prop === hovered) return;
@@ -115,6 +118,7 @@ export function createWorldPicking(options: WorldPickingOptions): WorldPicking {
   canvas.addEventListener('pointerleave', onPointerLeave);
 
   return {
+    pickPropAt: pickPoint,
     setFocus(prop) {
       focused = prop;
       refreshGlow();
