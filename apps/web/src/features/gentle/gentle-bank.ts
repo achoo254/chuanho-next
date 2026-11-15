@@ -33,7 +33,6 @@ export interface GentleBank {
   readonly apologies: Readonly<Record<KarmaKind, readonly string[]>>;
 }
 
-const isTone = (value: unknown): value is GentleTone => (GENTLE_TONES as readonly unknown[]).includes(value);
 const isGroup = (value: unknown): value is GentleGroup => (GENTLE_GROUPS as readonly unknown[]).includes(value);
 
 /** Non-empty phrases within the length limit; anything else is dropped. */
