@@ -8,6 +8,8 @@ import pg from 'pg';
 import * as schema from './schema';
 
 export type Db = PgDatabase<PgQueryResultHKT, typeof schema>;
+/** The handle inside `db.transaction(async (tx) => …)`. */
+export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
 
 export interface DbHandle {
   db: Db;

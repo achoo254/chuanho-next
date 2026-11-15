@@ -11,6 +11,11 @@ export const users = pgTable('users', {
   sub: text('sub').notNull().unique(),
   displayName: text('display_name'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  /**
+   * Bumped by "delete all my data": a sync carrying an older epoch comes from a device that has not heard of the wipe,
+   * and its payload is ignored so nothing deleted is written back (contract `SyncRequest.epoch`).
+   */
+  dataEpoch: integer('data_epoch').notNull().default(1),
 });
 
 /** Web sessions. `id` is the sha256 of the opaque cookie token, never the token itself. */

@@ -4,6 +4,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { type FakeIdp, startFakeIdp } from '../../test/fake-idp';
 import { api, signIn } from '../../test/sign-in';
 import { type TestServer, startTestServer } from '../../test/test-server';
+import { STREAMS_PER_USER } from './room-event-hub';
 import { newRoomCode } from './room-routes';
 
 const SECRET = 'test-secret-'.padEnd(40, 'x');
@@ -79,6 +80,9 @@ describe('room routes', () => {
     expect((await post('/api/rooms', '', { name: 'x', theme: 'deadline' })).status).toBe(401);
     expect(await (await post('/api/rooms', host, { name: '', theme: 'deadline' })).json()).toEqual({ error: 'invalid-body' });
     expect((await post('/api/rooms', host, { name: 'x', theme: 'party' })).status).toBe(400);
+    const badName = await post('/api/rooms', host, { name: 'ib 0912 345 678', theme: 'deadline' });
+    expect(badName.status).toBe(422);
+    expect(await badName.json()).toEqual({ error: 'invalid-room-name', reason: 'phone' });
   });
 
   it('let a friend join by code and see the host with short names only', async () => {
@@ -141,6 +145,22 @@ describe('room routes', () => {
       const reading = readEvents(stream.body, 5);
       await post(`/api/rooms/${room.code}/leave`, guest);
       expect((await reading).closed).toBe(true);
+    } finally {
+      abort.abort();
+    }
+  });
+
+  it('cap the live streams of one account', async () => {
+    const room = await createRoom();
+    const abort = new AbortController();
+    try {
+      for (let i = 0; i < STREAMS_PER_USER; i += 1) {
+        const open = await fetch(`${server.origin}/api/rooms/${room.code}/events`, { headers: { cookie: host }, signal: abort.signal });
+        expect(open.status).toBe(200);
+      }
+      const refused = await fetch(`${server.origin}/api/rooms/${room.code}/events`, { headers: { cookie: host } });
+      expect(refused.status).toBe(429);
+      expect(await refused.json()).toEqual({ error: 'too-many-streams' });
     } finally {
       abort.abort();
     }

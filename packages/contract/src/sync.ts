@@ -13,6 +13,12 @@ export interface SyncRequest {
   readonly journal: readonly JournalEntry[];
   /** The cursor the previous response returned; 0 on the first sync of a device. */
   readonly cursor: number;
+  /**
+   * The data epoch the previous response returned; 0 when this device never synced this account. The server bumps the
+   * epoch when the account's data is deleted: a request carrying an older epoch is a device that has not heard of the
+   * wipe, so the server ignores its payload (nothing old is written back) and answers with the new epoch.
+   */
+  readonly epoch: number;
 }
 
 export interface SyncResponse {
@@ -21,6 +27,8 @@ export interface SyncResponse {
   /** Entries the server changed after `cursor` (this device's own edits come back too, harmlessly). */
   readonly journal: readonly JournalEntry[];
   readonly cursor: number;
+  /** The account's current data epoch (starts at 1). A device whose stored epoch differs must drop its local copy. */
+  readonly epoch: number;
 }
 
 export function parseSyncRequest(raw: unknown): SyncRequest | null {
@@ -29,7 +37,9 @@ export function parseSyncRequest(raw: unknown): SyncRequest | null {
   if (!progress || !isCount(raw.cursor, Number.MAX_SAFE_INTEGER)) return null;
   const journal = raw.journal.map(parseJournalEntry);
   if (journal.some((entry) => entry === null)) return null;
-  return { progress, journal: journal as JournalEntry[], cursor: raw.cursor };
+  const epoch = raw.epoch === undefined ? 0 : raw.epoch;
+  if (!isCount(epoch, Number.MAX_SAFE_INTEGER)) return null;
+  return { progress, journal: journal as JournalEntry[], cursor: raw.cursor, epoch };
 }
 
 export function parseSyncResponse(raw: unknown): SyncResponse | null {
@@ -38,5 +48,6 @@ export function parseSyncResponse(raw: unknown): SyncResponse | null {
   if (!progress || !isCount(raw.cursor, Number.MAX_SAFE_INTEGER)) return null;
   // Entries that fail validation are dropped: one bad row must not block the rest.
   const journal = raw.journal.map(parseJournalEntry).filter((entry): entry is JournalEntry => entry !== null);
-  return { progress, journal, cursor: raw.cursor };
+  if (!isCount(raw.epoch, Number.MAX_SAFE_INTEGER) || raw.epoch < 1) return null;
+  return { progress, journal, cursor: raw.cursor, epoch: raw.epoch };
 }

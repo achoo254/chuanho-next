@@ -15,6 +15,8 @@ import {
   parseRoomCreateInput,
   parseRoomLockInput,
   parseSyncRequest,
+  parseSyncResponse,
+  readRoomCreateInput,
   quietHourWindow,
   roomStatus,
   stickState,
@@ -69,9 +71,22 @@ describe('progress merge', () => {
 
 describe('sync request', () => {
   it('accepts a well-formed request and rejects one with a bad entry', () => {
-    expect(parseSyncRequest({ progress: EMPTY_PROGRESS, journal: [entry()], cursor: 0 })?.journal).toHaveLength(1);
+    expect(parseSyncRequest({ progress: EMPTY_PROGRESS, journal: [entry()], cursor: 0, epoch: 0 })?.journal).toHaveLength(1);
     expect(parseSyncRequest({ progress: EMPTY_PROGRESS, journal: [{ id: 1 }], cursor: 0 })).toBeNull();
     expect(parseSyncRequest({ progress: EMPTY_PROGRESS, journal: [], cursor: -1 })).toBeNull();
+  });
+
+  it('reads a missing epoch as 0 (never synced) and refuses a bad one', () => {
+    expect(parseSyncRequest({ progress: EMPTY_PROGRESS, journal: [], cursor: 0 })?.epoch).toBe(0);
+    expect(parseSyncRequest({ progress: EMPTY_PROGRESS, journal: [], cursor: 0, epoch: 3 })?.epoch).toBe(3);
+    expect(parseSyncRequest({ progress: EMPTY_PROGRESS, journal: [], cursor: 0, epoch: -1 })).toBeNull();
+    expect(parseSyncRequest({ progress: EMPTY_PROGRESS, journal: [], cursor: 0, epoch: '2' })).toBeNull();
+  });
+
+  it('needs an epoch of at least 1 in a response', () => {
+    expect(parseSyncResponse({ progress: EMPTY_PROGRESS, journal: [entry()], cursor: 4, epoch: 2 })).toEqual({ progress: EMPTY_PROGRESS, journal: [entry()], cursor: 4, epoch: 2 });
+    expect(parseSyncResponse({ progress: EMPTY_PROGRESS, journal: [], cursor: 4, epoch: 0 })).toBeNull();
+    expect(parseSyncResponse({ progress: EMPTY_PROGRESS, journal: [], cursor: 4 })).toBeNull();
   });
 });
 
@@ -134,6 +149,15 @@ describe('rooms', () => {
     expect(parseRoomCreateInput({ name: 'x', theme: 'deadline', burnMinutes: 45 })).toBeNull();
   });
 
+  it('runs the wish filter on room names and tells a refused name from a bad body', () => {
+    expect(parseRoomCreateInput({ name: 'Mong qua môn', theme: 'exam' })).toEqual({ name: 'Mong qua môn', theme: 'exam', burnMinutes: 60 });
+    expect(parseRoomCreateInput({ name: 'ib 0912345678', theme: 'exam' })).toBeNull();
+    expect(readRoomCreateInput({ name: 'vào abc . com/xyz', theme: 'exam' })).toEqual({ ok: false, error: 'invalid-room-name', reason: 'link' });
+    expect(readRoomCreateInput({ name: 'chuyển khoản', theme: 'exam' })).toEqual({ ok: false, error: 'invalid-room-name', reason: 'money' });
+    expect(readRoomCreateInput({ name: '', theme: 'exam' })).toEqual({ ok: false, error: 'invalid-body' });
+    expect(readRoomCreateInput({ name: 'Phòng ＰＴＰＭ', theme: 'exam' })).toEqual({ ok: true, input: { name: 'Phòng PTPM', theme: 'exam', burnMinutes: 60 } });
+  });
+
   it('tracks a stick burning down and the room turning to ashes', () => {
     const stick = { litAt: 0, burnsOutAt: 60 * 60_000 };
     expect(stickState(stick, 30 * 60_000)).toEqual({ progress: 0.5, minutesLeft: 30, burntOut: false });
@@ -153,6 +177,7 @@ describe('rooms', () => {
 
   it('knows its error codes', () => {
     expect(isRoomErrorCode('room-full')).toBe(true);
+    expect(isRoomErrorCode('invalid-room-name')).toBe(true);
     expect(isRoomErrorCode('internal')).toBe(false);
   });
 });

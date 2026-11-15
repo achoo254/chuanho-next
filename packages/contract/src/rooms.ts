@@ -10,6 +10,7 @@
  * the server ends the stream for good (the room was deleted or the viewer is no longer in it).
  */
 import { cleanText, isRecord } from './primitives';
+import { type WishRejection, checkWish } from './wish-filter';
 
 export const ROOM_BURN_MINUTES = [30, 60, 90] as const;
 export type RoomBurnMinutes = (typeof ROOM_BURN_MINUTES)[number];
@@ -47,12 +48,27 @@ export interface RoomCreateInput {
   readonly burnMinutes: RoomBurnMinutes;
 }
 
-export function parseRoomCreateInput(raw: unknown): RoomCreateInput | null {
-  if (!isRecord(raw)) return null;
+export type RoomCreateRead =
+  | { readonly ok: true; readonly input: RoomCreateInput }
+  | { readonly ok: false; readonly error: 'invalid-body' }
+  /** The name is well-formed but fails the wish filter (a room name is shown to everyone who joins). */
+  | { readonly ok: false; readonly error: 'invalid-room-name'; readonly reason: WishRejection };
+
+/** Reads a create body, telling a malformed one from a name the wish filter refuses (the server answers each apart). */
+export function readRoomCreateInput(raw: unknown): RoomCreateRead {
+  if (!isRecord(raw)) return { ok: false, error: 'invalid-body' };
   const name = cleanText(raw.name, ROOM_NAME_MAX, 1);
   const burnMinutes = raw.burnMinutes ?? DEFAULT_ROOM_BURN_MINUTES;
-  if (name === null || !isRoomTheme(raw.theme) || !isBurnMinutes(burnMinutes)) return null;
-  return { name, theme: raw.theme, burnMinutes };
+  if (name === null || !isRoomTheme(raw.theme) || !isBurnMinutes(burnMinutes)) return { ok: false, error: 'invalid-body' };
+  const checked = checkWish(name, ROOM_NAME_MAX);
+  if (!checked.ok) return { ok: false, error: 'invalid-room-name', reason: checked.reason };
+  return { ok: true, input: { name: checked.text, theme: raw.theme, burnMinutes } };
+}
+
+/** The create body, or null when it is malformed or its name fails the wish filter. */
+export function parseRoomCreateInput(raw: unknown): RoomCreateInput | null {
+  const read = readRoomCreateInput(raw);
+  return read.ok ? read.input : null;
 }
 
 export interface RoomMember {
@@ -107,7 +123,10 @@ export const parseRoomLockInput = (raw: unknown): RoomLockInput | null => {
   return isRecord(raw) && typeof raw.locked === 'boolean' ? { locked: raw.locked } : null;
 };
 
-/** Error codes the room API answers with (`{ error }`); `wish-rejected` also carries `reason` (a WishRejection). */
+/**
+ * Error codes the room API answers with (`{ error }`); `wish-rejected` and `invalid-room-name` also carry `reason` (a
+ * WishRejection). `too-many-streams` refuses one more live event stream (per account or for the whole server).
+ */
 export const ROOM_ERRORS = [
   'room-not-found',
   'not-member',
@@ -123,6 +142,8 @@ export const ROOM_ERRORS = [
   'not-allowed',
   'already-reported',
   'own-wish',
+  'invalid-room-name',
+  'too-many-streams',
 ] as const;
 export type RoomErrorCode = (typeof ROOM_ERRORS)[number];
 export const isRoomErrorCode = (value: unknown): value is RoomErrorCode => (ROOM_ERRORS as readonly unknown[]).includes(value);

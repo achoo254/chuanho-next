@@ -10,13 +10,13 @@ describe('sync engine: first sync and bookmark', () => {
     await settle();
     expect(t.requests[0]).toMatchObject({ cursor: 0, progress: { merit: 30 } });
     expect(t.requests[0]?.journal.map((e) => e.id)).toEqual(['aaaaaaaa-1', 'bbbbbbbb-2']);
-    expect(t.storage.value).toEqual({ accountId: 'user-1', cursor: 7, lastSyncedAt: START });
+    expect(t.storage.value).toEqual({ accountId: 'user-1', cursor: 7, lastSyncedAt: START, epoch: 1 });
     expect(t.getProgress().merit).toBe(50);
     expect(t.engine.getStatus()).toEqual({ state: 'idle', lastSyncedAt: START, full: [] });
   });
 
   it('continues from the stored bookmark of the same account', async () => {
-    const t = setup({ entries: [entry('aaaaaaaa-1', START - 500), entry('bbbbbbbb-2', START - 50)], stored: { accountId: 'user-1', cursor: 9, lastSyncedAt: START - 100 } });
+    const t = setup({ entries: [entry('aaaaaaaa-1', START - 500), entry('bbbbbbbb-2', START - 50)], stored: { accountId: 'user-1', cursor: 9, lastSyncedAt: START - 100, epoch: 1 } });
     t.engine.start('user-1');
     await settle();
     expect(t.requests[0]?.cursor).toBe(9);
@@ -24,7 +24,7 @@ describe('sync engine: first sync and bookmark', () => {
   });
 
   it("drops another account's bookmark and starts over", async () => {
-    const t = setup({ entries: [entry('aaaaaaaa-1', START - 500)], stored: { accountId: 'user-0', cursor: 9, lastSyncedAt: START - 100 } });
+    const t = setup({ entries: [entry('aaaaaaaa-1', START - 500)], stored: { accountId: 'user-0', cursor: 9, lastSyncedAt: START - 100, epoch: 1 } });
     t.engine.start('user-1');
     await settle();
     expect(t.requests[0]?.cursor).toBe(0);

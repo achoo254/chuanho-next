@@ -21,6 +21,15 @@ const vi = {
   signOut: 'Đăng xuất',
   signingOut: 'Đang đăng xuất…',
   signOutFailed: 'Chưa đăng xuất được, thử lại sau nhé.',
+  signOutWipe: 'Xóa dữ liệu trên máy này khi đăng xuất',
+  mergeAsk: 'Gộp dữ liệu trên máy này vào tài khoản của bạn?',
+  mergeNote: 'Công đức và sổ đang có trên máy này sẽ được lưu vào tài khoản.',
+  merge: 'Gộp',
+  noMerge: 'Không gộp, bắt đầu trống',
+  noMergeNote: 'Dữ liệu trên máy này sẽ được xóa, rồi tải dữ liệu của tài khoản về.',
+  otherOwnerAsk: 'Dữ liệu trên máy này thuộc một tài khoản khác, nên sẽ không được gửi lên tài khoản của bạn.',
+  startClean: 'Bắt đầu sạch cho tài khoản này',
+  startCleanNote: 'Dữ liệu trên máy này sẽ được xóa, rồi tải dữ liệu của tài khoản về. Chưa chọn thì tài khoản chưa đồng bộ.',
 } as const;
 
 export type AccountTextKey = keyof typeof vi;
@@ -45,6 +54,15 @@ const en: Record<AccountTextKey, string> = {
   signOut: 'Sign out',
   signingOut: 'Signing out…',
   signOutFailed: 'Could not sign out, please try again later.',
+  signOutWipe: 'Clear the data on this device when signing out',
+  mergeAsk: 'Add the data on this device to your account?',
+  mergeNote: 'The merit and journal on this device will be saved to the account.',
+  merge: 'Add it',
+  noMerge: 'Do not add, start empty',
+  noMergeNote: 'The data on this device will be cleared, then your account data is loaded.',
+  otherOwnerAsk: 'The data on this device belongs to another account, so it will not be sent to yours.',
+  startClean: 'Start clean for this account',
+  startCleanNote: 'The data on this device will be cleared, then your account data is loaded. Until then this account does not sync.',
 };
 
 export const useAccountText = createFeatureText(vi, en);

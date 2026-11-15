@@ -69,7 +69,7 @@ export const entry = (id: string, updatedAt: number, note = ''): JournalEntry =>
 });
 
 export type Reply = ApiResult<SyncResponse>;
-export const ok = (value: Partial<SyncResponse> = {}): Reply => ({ ok: true, value: { progress: EMPTY_PROGRESS, journal: [], cursor: 0, ...value } });
+export const ok = (value: Partial<SyncResponse> = {}): Reply => ({ ok: true, value: { progress: EMPTY_PROGRESS, journal: [], cursor: 0, epoch: 1, ...value } });
 
 export function setupSync(options: { entries?: JournalEntry[]; stored?: SyncBookmark | null; replies?: Reply[] } = {}) {
   const clock = manualClock();
@@ -90,17 +90,23 @@ export function setupSync(options: { entries?: JournalEntry[]; stored?: SyncBook
   const requests: SyncRequest[] = [];
   const send = vi.fn(async (request: SyncRequest): Promise<Reply> => {
     requests.push(request);
-    const reply = replies.shift() ?? ok({ cursor: request.cursor });
+    const reply = replies.shift() ?? ok({ cursor: request.cursor, epoch: request.epoch || 1 });
     // Like the server: the answer's progress is the stored one merged with what the device sent.
     return reply.ok ? { ok: true, value: { ...reply.value, progress: mergeProgress(reply.value.progress, request.progress) } } : reply;
   });
   const onUnauthorized = vi.fn();
+  // Like app-sync's wipe: progress back to a fresh device's, every journal entry deleted.
+  const discardLocal = vi.fn(() => {
+    progress = DEFAULT_PROGRESS;
+    journal.removeAll();
+  });
   const engine = createSyncEngine({
     collections: [createProgressCollection(progressSource), createJournalCollection(journal)],
     send,
     storage,
     clock,
     onUnauthorized,
+    discardLocal,
   });
-  return { engine, clock, storage, journal, requests, send, onUnauthorized, getProgress: () => progress, setProgress: (p: PlayerProgress) => void (progress = p) };
+  return { engine, clock, storage, journal, requests, send, onUnauthorized, discardLocal, getProgress: () => progress, setProgress: (p: PlayerProgress) => void (progress = p) };
 }

@@ -385,6 +385,15 @@ a.hud-btn {
 .account-danger {
   border-color: var(--c-lotus-deep);
 }
+.account-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+.account-check input {
+  accent-color: var(--c-primary-solid);
+}
 
 .quiet-hour-chip {
   font-size: 13px;

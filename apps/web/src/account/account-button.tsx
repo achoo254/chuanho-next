@@ -1,7 +1,8 @@
 /**
  * The account control in the HUD's top bar. A guest (or anyone while the check is pending, or with no server) gets a
  * one-tap sign-in link to the server's /auth/login, never a wall; a signed-in player gets a round chip with the first
- * letter of their name, which opens the account menu.
+ * letter of their name, which opens the account menu. It also hosts the question asked right after signing in when the
+ * data on this device is not the account's yet.
  */
 import { type ReactNode, useState } from 'react';
 import { HudIcon } from '../hud/hud-icons';
@@ -12,6 +13,7 @@ import { useAccount } from './account-context';
 import { useAccountText } from './account-messages';
 import { nameInitial } from './account-state';
 import { AccountDialog } from './account-dialog';
+import { AccountOwnershipDialog } from './account-ownership-dialog';
 
 export function AccountButton(): ReactNode {
   const { locale } = useI18n();
@@ -49,6 +51,7 @@ export function AccountButton(): ReactNode {
       {control}
       {/* Stays mounted while open, so the result of "delete, then sign out" is still shown after signing out. */}
       {open && <AccountDialog open={open} onClose={() => setOpen(false)} />}
+      <AccountOwnershipDialog />
     </>
   );
 }

@@ -4,18 +4,18 @@
  * event streams. Wish text is never logged.
  */
 import { randomInt, randomUUID } from 'node:crypto';
-import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH, type RoomErrorCode, isRecord, parseRoomCreateInput, parseRoomLockInput } from '@chuanho/contract';
+import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH, type RoomErrorCode, isRecord, parseRoomLockInput, readRoomCreateInput } from '@chuanho/contract';
 import express, { type ErrorRequestHandler, type Request, type Response, type Router } from 'express';
-import { requireUser, signedInUserId } from '../auth/require-user';
+import { signedInUserId } from '../auth/require-user';
 import { findDisplayName } from '../auth/session-store';
 import { HttpError } from '../http-error';
 import type { RouteDeps } from '../route-module';
-import { sessionRateLimit } from '../session-rate-limit';
+import { signedInLimit } from '../session-rate-limit';
 import { RoomEventHub } from './room-event-hub';
 import { RoomError } from './room-model';
 import { RoomStore } from './room-store';
 
-/** How often burnt-out rooms are turned to ashes and expired ones deleted, between requests. */
+/** How often burnt-out rooms are turned to ashes and expired ones deleted (a request settles only its own room). */
 export const ROOM_SWEEP_MS = 15_000;
 
 const MINUTE = 60_000;
@@ -39,6 +39,8 @@ const STATUS: Readonly<Record<RoomErrorCode, number>> = {
   'not-allowed': 403,
   'already-reported': 409,
   'own-wish': 409,
+  'invalid-room-name': 422,
+  'too-many-streams': 429,
 };
 
 export const newRoomCode = (): string => Array.from({ length: ROOM_CODE_LENGTH }, () => ROOM_CODE_ALPHABET.charAt(randomInt(ROOM_CODE_ALPHABET.length))).join('');
@@ -55,9 +57,10 @@ function wishIdOf(req: Request): string {
   return raw;
 }
 
-export function roomRoutes({ config, db, now }: RouteDeps): Router {
+export function roomRoutes(deps: RouteDeps): Router {
+  const { db, now } = deps;
   const router = express.Router();
-  const hub = new RoomEventHub((code, userId) => store.snapshotOrNull(code, userId));
+  const hub = new RoomEventHub((code) => store.streamView(code));
   const store: RoomStore = new RoomStore({
     now: () => now().getTime(),
     newId: randomUUID,
@@ -71,9 +74,8 @@ export function roomRoutes({ config, db, now }: RouteDeps): Router {
   // Burn-outs reach open streams even when nobody calls; never what keeps the process alive.
   setInterval(() => store.sweep(), ROOM_SWEEP_MS).unref();
 
-  const signedIn = requireUser(config, db, now);
-  const writes = sessionRateLimit(config, MINUTE, WRITES_PER_MINUTE);
-  const reads = sessionRateLimit(config, MINUTE, READS_PER_MINUTE);
+  const writes = signedInLimit(deps, MINUTE, WRITES_PER_MINUTE);
+  const reads = signedInLimit(deps, MINUTE, READS_PER_MINUTE);
   const json = express.json({ limit: '2kb' });
 
   /** The short name others see: the account's display name, or empty for the web to say "someone". */
@@ -89,22 +91,24 @@ export function roomRoutes({ config, db, now }: RouteDeps): Router {
     hub.broadcast(code);
   }
 
-  router.post('/api/rooms', writes, signedIn, json, async (req, res) => {
-    const input = parseRoomCreateInput(req.body);
-    if (!input) throw new HttpError(400, 'invalid-body');
+  router.post('/api/rooms', ...writes, json, async (req, res) => {
+    const read = readRoomCreateInput(req.body);
+    if (!read.ok && read.error === 'invalid-room-name') throw new RoomError('invalid-room-name', read.reason);
+    if (!read.ok) throw new HttpError(400, 'invalid-body');
     const userId = signedInUserId(res);
-    const snapshot = store.create(userId, await memberName(userId), input);
+    const snapshot = store.create(userId, await memberName(userId), read.input);
     res.status(201).set('Cache-Control', 'no-store').json(snapshot);
   });
 
-  router.get('/api/rooms/:code', reads, signedIn, (req, res) => {
+  router.get('/api/rooms/:code', ...reads, (req, res) => {
     res.set('Cache-Control', 'no-store').json(store.snapshot(codeOf(req), signedInUserId(res)));
   });
 
-  router.get('/api/rooms/:code/events', reads, signedIn, (req, res) => {
+  router.get('/api/rooms/:code/events', ...reads, (req, res) => {
     const code = codeOf(req);
     const userId = signedInUserId(res);
     const first = store.snapshot(code, userId);
+    hub.assertCapacity(userId);
     res.status(200).set({
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-store',
@@ -114,45 +118,46 @@ export function roomRoutes({ config, db, now }: RouteDeps): Router {
     });
     res.flushHeaders();
     const forget = hub.open(code, userId, res, first);
-    req.on('close', forget);
+    // The response's close fires once the connection is gone, whichever side ended it.
+    res.on('close', forget);
   });
 
-  router.post('/api/rooms/:code/join', writes, signedIn, async (req, res) => {
+  router.post('/api/rooms/:code/join', ...writes, async (req, res) => {
     const code = codeOf(req);
     const userId = signedInUserId(res);
     changed(res, code, store.join(code, userId, await memberName(userId)));
   });
 
-  router.post('/api/rooms/:code/leave', writes, signedIn, (req, res) => {
+  router.post('/api/rooms/:code/leave', ...writes, (req, res) => {
     const code = codeOf(req);
     store.leave(code, signedInUserId(res));
     res.status(204).set('Cache-Control', 'no-store').end();
     hub.broadcast(code);
   });
 
-  router.post('/api/rooms/:code/light', writes, signedIn, (req, res) => {
+  router.post('/api/rooms/:code/light', ...writes, (req, res) => {
     const code = codeOf(req);
     changed(res, code, store.light(code, signedInUserId(res)));
   });
 
-  router.post('/api/rooms/:code/wishes', writes, signedIn, json, (req, res) => {
+  router.post('/api/rooms/:code/wishes', ...writes, json, (req, res) => {
     const body: unknown = req.body;
     if (!isRecord(body) || typeof body.text !== 'string' || body.text.length > 400) throw new HttpError(400, 'invalid-body');
     const code = codeOf(req);
     changed(res, code, store.addWish(code, signedInUserId(res), body.text), 201);
   });
 
-  router.delete('/api/rooms/:code/wishes/:wishId', writes, signedIn, (req, res) => {
+  router.delete('/api/rooms/:code/wishes/:wishId', ...writes, (req, res) => {
     const code = codeOf(req);
     changed(res, code, store.deleteWish(code, signedInUserId(res), wishIdOf(req)));
   });
 
-  router.post('/api/rooms/:code/wishes/:wishId/report', writes, signedIn, (req, res) => {
+  router.post('/api/rooms/:code/wishes/:wishId/report', ...writes, (req, res) => {
     const code = codeOf(req);
     changed(res, code, store.report(code, signedInUserId(res), wishIdOf(req)));
   });
 
-  router.post('/api/rooms/:code/lock', writes, signedIn, json, (req, res) => {
+  router.post('/api/rooms/:code/lock', ...writes, json, (req, res) => {
     const input = parseRoomLockInput(req.body);
     if (!input) throw new HttpError(400, 'invalid-body');
     const code = codeOf(req);

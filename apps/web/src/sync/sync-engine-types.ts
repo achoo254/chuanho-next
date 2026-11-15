@@ -1,8 +1,8 @@
 /** The sync engine's public shapes (sync-engine.ts has the behaviour). */
-import type { SyncResponse } from '@chuanho/contract';
+import type { SyncRequest, SyncResponse } from '@chuanho/contract';
 import type { ApiResult } from '../account/account-api';
 import type { SyncBookmarkStorage } from './sync-state-storage';
-import type { SyncPayload, SyncedCollection } from './synced-collection';
+import type { SyncedCollection } from './synced-collection';
 
 export type SyncState = 'idle' | 'syncing' | 'error' | 'offline';
 
@@ -22,17 +22,29 @@ export interface SyncClock {
 
 export interface SyncEngineDeps {
   readonly collections: readonly SyncedCollection[];
-  send(request: SyncPayload & { readonly cursor: number }): Promise<ApiResult<SyncResponse>>;
+  send(request: SyncRequest): Promise<ApiResult<SyncResponse>>;
   readonly storage: SyncBookmarkStorage;
   readonly clock: SyncClock;
   /** The server no longer knows the session. */
   onUnauthorized(): void;
+  /**
+   * The account's data was deleted from another device (the server answered a newer epoch): drop this device's copy of
+   * the synced data, as on a fresh device. The engine then adopts the server's current state.
+   */
+  discardLocal(): void;
 }
 
 export interface SyncEngine {
-  /** Starts (or keeps) syncing `accountId`; another account's bookmark is dropped first. */
-  start(accountId: string): void;
-  /** Stops syncing; `forget` also removes the bookmark (signing out). Local data is never touched. */
+  /**
+   * Starts (or keeps) syncing `accountId`, which now owns the device's data: its bookmark is saved at once. Another
+   * account's bookmark is dropped first. `fromNow` starts over uploading nothing older than now (the device's data was
+   * just wiped for this account).
+   */
+  start(accountId: string, options?: { readonly fromNow?: boolean }): void;
+  /**
+   * Stops syncing. The bookmark stays as the owner mark of the device's data (signing out keeps it); `forget` removes
+   * it, making the data a guest's. Local data is never touched here.
+   */
   stop(options?: { readonly forget?: boolean }): void;
   /** Something changed on the device. */
   localChange(): void;

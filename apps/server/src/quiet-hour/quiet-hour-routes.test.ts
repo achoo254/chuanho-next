@@ -1,6 +1,8 @@
 /** "Giờ Tĩnh" through the HTTP API, on a clock the test moves (sign-in itself runs on real time). */
 import { QUIET_HOUR_PERSON_CAP, type QuietHourStatus, quietHourWindow, vietnamDay } from '@chuanho/contract';
+import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { quietHourPeople, users } from '../db/schema';
 import { type FakeIdp, startFakeIdp } from '../../test/fake-idp';
 import { api, signIn } from '../../test/sign-in';
 import { type TestServer, startTestServer } from '../../test/test-server';
@@ -85,14 +87,21 @@ describe('quiet hour', () => {
     expect((await statusOf(await fetch(`${server.origin}/api/quiet-hour`))).total).toBe(total + 25);
   });
 
-  it("drops a person's strokes with their data but keeps the shared total", async () => {
+  it("keeps tonight's per-person cap and the shared total through a data delete, and drops past nights", async () => {
     const session = await signedInAs('striker-leaves');
+    const [me] = await server.database.db.select({ id: users.id }).from(users).where(eq(users.sub, 'striker-leaves'));
+    if (!me) throw new Error('no user row');
+    const yesterday = vietnamDay(WINDOW.start - 86_400_000);
+    await server.database.db.insert(quietHourPeople).values({ day: yesterday, userId: me.id, count: 12 });
     clock = WINDOW.start + 4 * MINUTE;
-    const before = (await statusOf(await beats(session, TODAY, 30))).total;
+    let total = 0;
+    for (let sent = 0; sent < QUIET_HOUR_PERSON_CAP; sent += 80) total = (await statusOf(await beats(session, TODAY, 80))).total;
     clock = null;
     expect((await api(server, '/api/me/data', { method: 'DELETE', cookie: session })).status).toBe(204);
     clock = WINDOW.start + 5 * MINUTE;
-    // The cap starts over for this person; the shared total kept the earlier 30.
-    expect((await statusOf(await beats(session, TODAY, 5))).total).toBe(before + 5);
+    // Still at the cap for tonight: accepted, nothing added.
+    expect((await statusOf(await beats(session, TODAY, 5))).total).toBe(total);
+    const rows = await server.database.db.select({ day: quietHourPeople.day }).from(quietHourPeople).where(eq(quietHourPeople.userId, me.id));
+    expect(rows.map((row) => row.day)).toEqual([TODAY]);
   });
 });

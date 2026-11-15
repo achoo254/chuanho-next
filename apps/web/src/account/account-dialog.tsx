@@ -3,8 +3,11 @@
  * "only on the server" or "also on this device"), and sign out. A native modal dialog like the "i" panel, so Esc,
  * focus trapping and the backdrop come from the browser; the shell's keys ignore everything inside a dialog.
  *
- * "Only on the server" signs out afterwards: the device keeps its data as a guest, and staying signed in would just
- * upload it all again at the next sync.
+ * "Only on the server" signs out afterwards: the device keeps its data as a guest's, and staying signed in would just
+ * upload it all again at the next sync; signing in again asks before adding it to the account.
+ *
+ * Signing out keeps the data on the device, still marked as this account's (another account signing in here is never
+ * handed it); "clear the data on this device" wipes it instead.
  */
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { HudIcon } from '../hud/hud-icons';
@@ -23,8 +26,9 @@ export function AccountDialog({ open, onClose }: { open: boolean; onClose: () =>
   const text = useAccountText();
   const { user, api, signOut } = useAccount();
   const sync = useSyncStatus();
-  const { wipeLocalAndRestart } = useSyncControls();
+  const { wipeLocalAndRestart, wipeLocalAndForget, releaseToGuest } = useSyncControls();
   const [step, setStep] = useState<Step>('idle');
+  const [wipeOnSignOut, setWipeOnSignOut] = useState(false);
   const ref = useRef<HTMLDialogElement>(null);
   const keepRef = useRef<HTMLButtonElement>(null);
 
@@ -53,14 +57,22 @@ export function AccountDialog({ open, onClose }: { open: boolean; onClose: () =>
       return;
     }
     if (alsoHere) wipeLocalAndRestart();
-    else await signOut();
+    else {
+      // Released before signing out: no sync in between can mark the data as this account's again.
+      releaseToGuest();
+      await signOut();
+    }
     setStep('deleted');
   };
 
   const leave = async (): Promise<void> => {
     setStep('signingOut');
-    if (await signOut()) close();
-    else setStep('signOutFailed');
+    if (!(await signOut())) {
+      setStep('signOutFailed');
+      return;
+    }
+    if (wipeOnSignOut) wipeLocalAndForget();
+    close();
   };
 
   const line = syncStatusLine(sync, locale);
@@ -113,6 +125,10 @@ export function AccountDialog({ open, onClose }: { open: boolean; onClose: () =>
             <HudIcon name="signOut" size={18} />
             <span>{step === 'signingOut' ? text('signingOut') : text('signOut')}</span>
           </button>
+          <label className="account-hint account-check" data-id="account-sign-out-wipe">
+            <input type="checkbox" checked={wipeOnSignOut} disabled={step === 'signingOut'} onChange={(event) => setWipeOnSignOut(event.target.checked)} />
+            <span>{text('signOutWipe')}</span>
+          </label>
         </div>
       )}
     </dialog>

@@ -132,6 +132,57 @@ describe('RoomStore', () => {
     expect(logs.at(-1)).toContain('taken down');
   });
 
+  it('keeps a stick, the wish count and a report across leave and rejoin', () => {
+    const { code } = store.create('u-host', 'An', INPUT);
+    store.join(code, 'u-2', 'Bình');
+    store.light(code, 'u-2');
+    const wish = store.addWish(code, 'u-host', 'Cho sprint êm').wishes[0];
+    if (!wish) throw new Error('no wish');
+    store.report(code, 'u-2', wish.id);
+    for (let i = 1; i < ROOM_WISHES_PER_MEMBER; i += 1) {
+      clock += ROOM_WISH_INTERVAL_MS;
+      store.addWish(code, 'u-2', `Lời nguyện số ${i}`);
+    }
+    store.leave(code, 'u-2');
+    clock += 5 * MINUTE;
+    const back = store.join(code, 'u-2', 'Bình mới');
+    const me = back.members.find((member) => member.id === back.meId);
+    expect(me).toMatchObject({ name: 'Bình mới', stick: { litAt: 1_000_000, burnsOutAt: 1_000_000 + 30 * MINUTE } });
+    expect(back.litTotal).toBe(1);
+    expect(back.myReportedWishId).toBe(wish.id);
+    expect(refusal(() => store.light(code, 'u-2'))).toBe('already-lit');
+    clock += ROOM_WISH_INTERVAL_MS;
+    store.addWish(code, 'u-2', 'Lời nguyện cuối');
+    clock += ROOM_WISH_INTERVAL_MS;
+    expect(refusal(() => store.addWish(code, 'u-2', 'Thêm nữa'))).toBe('wish-limit');
+    expect(refusal(() => store.report(code, 'u-2', wish.id))).toBe('already-reported');
+    expect(store.snapshot(code, 'u-host').wishes.find((w) => w.id === wish.id)?.reports).toBe(1);
+  });
+
+  it('gives a report right back once the reported wish is gone', () => {
+    const { code } = store.create('u-host', 'An', INPUT);
+    store.join(code, 'u-2', 'Bình');
+    const first = store.addWish(code, 'u-host', 'Câu một').wishes[0];
+    clock += ROOM_WISH_INTERVAL_MS;
+    const second = store.addWish(code, 'u-host', 'Câu hai').wishes[1];
+    if (!first || !second) throw new Error('no wish');
+    store.report(code, 'u-2', first.id);
+    expect(refusal(() => store.report(code, 'u-2', second.id))).toBe('already-reported');
+    expect(store.deleteWish(code, 'u-host', first.id).wishes.map((w) => w.id)).toEqual([second.id]);
+    expect(store.snapshot(code, 'u-2').myReportedWishId).toBeNull();
+    expect(store.report(code, 'u-2', second.id).myReportedWishId).toBe(second.id);
+  });
+
+  it('settles only the room a request touches; the timer sweep walks the rest', () => {
+    const a = store.create('u-host', 'An', INPUT).code;
+    const b = store.create('u-other', 'Chi', INPUT).code;
+    clock += ROOM_IDLE_TTL_MS;
+    expect(refusal(() => store.snapshot(a, 'u-host'))).toBe('room-not-found');
+    expect(sweeps).toEqual([{ turnedToAshes: [], purged: [a] }]);
+    expect(store.size).toBe(1);
+    expect(store.sweep().purged).toEqual([b]);
+  });
+
   it('turns to ashes when the last stick burns out, deleting wishes, then forgets the room', () => {
     const { code } = store.create('u-host', 'An', INPUT);
     store.join(code, 'u-2', 'Bình');

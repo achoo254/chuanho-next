@@ -5,8 +5,8 @@
  */
 import type { SyncRequest, SyncResponse } from '@chuanho/contract';
 
-/** A sync request without the engine's own cursor. */
-export type SyncPayload = Omit<SyncRequest, 'cursor'>;
+/** A sync request without the engine's own cursor and epoch. */
+export type SyncPayload = Omit<SyncRequest, 'cursor' | 'epoch'>;
 
 export interface SyncedCollection {
   /** Stable name, used in the status when the server says this collection is full. */
@@ -17,6 +17,11 @@ export interface SyncedCollection {
   collect(since: number): Partial<SyncPayload>;
   /** Whether a sync now would carry something new from this device. */
   hasPending(since: number): boolean;
+  /**
+   * Whether the last `collect` held part of the changes back to keep the request small: the engine then sends the rest
+   * right away, and only counts the sync as done once nothing is held back.
+   */
+  hasMore?(): boolean;
   /** Takes this collection's part of a successful answer; `sent` is the payload that went out. */
   apply(response: SyncResponse, sent: SyncPayload): void;
   /** Forgets what it learned about the server (another account, or the server's data was deleted). */

@@ -1,9 +1,11 @@
 /** POST /api/sync and DELETE /api/me/data through the HTTP API, with two "devices" sharing one account. */
-import { EMPTY_PROGRESS, type JournalEntry, type ProgressDoc, type SyncResponse } from '@chuanho/contract';
+import { EMPTY_PROGRESS, type SyncResponse } from '@chuanho/contract';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { DATA_DELETES_PER_15_MIN } from '../account/account-routes';
 import { type FakeIdp, startFakeIdp } from '../../test/fake-idp';
 import { api, signIn } from '../../test/sign-in';
+import { type SyncBody, journalEntry as entry, progressOf, syncOk } from '../../test/sync-client';
 import { type TestServer, startTestServer } from '../../test/test-server';
 
 const SECRET = 'test-secret-'.padEnd(40, 'x');
@@ -20,25 +22,8 @@ afterAll(async () => {
   await idp.close();
 });
 
-const entry = (id: string, updatedAt: number, change: Partial<JournalEntry> = {}): JournalEntry => ({
-  id,
-  day: '2026-11-15',
-  kind: 'harsh',
-  note: `ghi chú ${id}`,
-  released: { reset: false, apology: false, deed: false },
-  createdAt: 1_700_000_000_000,
-  updatedAt,
-  deletedAt: null,
-  ...change,
-});
-
-const progressOf = (change: Partial<ProgressDoc>): ProgressDoc => ({ ...EMPTY_PROGRESS, ...change });
-
-async function sync(session: string, body: { progress: ProgressDoc; journal: JournalEntry[]; cursor: number }): Promise<SyncResponse> {
-  const res = await api(server, '/api/sync', { method: 'POST', cookie: session, body: JSON.stringify(body) });
-  expect(res.status).toBe(200);
-  return (await res.json()) as SyncResponse;
-}
+const sync = (session: string, body: SyncBody): Promise<SyncResponse> => syncOk(server, session, body);
+const deleteAll = (session: string): Promise<Response> => api(server, '/api/me/data', { method: 'DELETE', cookie: session });
 
 /** A fresh account signed in on two browsers. */
 async function twoDevices(sub: string): Promise<[string, string]> {
@@ -56,10 +41,12 @@ describe('POST /api/sync', () => {
     expect(first.cursor).toBeGreaterThan(0);
     // Nothing changed since: an empty journal and the same cursor.
     const again = await sync(phone, { progress, journal: [], cursor: first.cursor });
-    expect(again).toEqual({ progress, journal: [], cursor: first.cursor });
+    expect(first.epoch).toBe(1);
+    expect(again).toEqual({ progress, journal: [], cursor: first.cursor, epoch: 1 });
   });
 
   it('merges two devices: counters grow, newer edits win, deletions travel, the cursor returns only newer rows', async () => {
+    const GONE_AT = Date.now() - 60_000;
     const [phone, laptop] = await twoDevices('two-devices');
     const p1 = await sync(phone, {
       progress: progressOf({ merit: 10, restraintCount: 2, moSkin: 'fish', updatedAt: 2_000 }),
@@ -79,19 +66,19 @@ describe('POST /api/sync', () => {
     expect(byId.get('entry-edit')?.released.reset).toBe(true);
     expect(byId.get('entry-gone')?.deletedAt).toBeNull();
 
-    // The phone deletes one entry; its next sync brings the laptop's edit and nothing it already has.
-    const p2 = await sync(phone, { progress: p1.progress, journal: [entry('entry-gone', 300, { deletedAt: 300 })], cursor: p1.cursor });
+    // The phone deletes one entry (a recent deletion: old marks are purged); its next sync brings the laptop's edit and nothing it already has.
+    const p2 = await sync(phone, { progress: p1.progress, journal: [entry('entry-gone', GONE_AT, { deletedAt: GONE_AT })], cursor: p1.cursor });
     expect(p2.journal.map((e) => e.id).sort()).toEqual(['entry-edit', 'entry-gone']);
-    expect(p2.journal.find((e) => e.id === 'entry-gone')).toMatchObject({ deletedAt: 300, note: '' });
+    expect(p2.journal.find((e) => e.id === 'entry-gone')).toMatchObject({ deletedAt: GONE_AT, note: '' });
 
     // The laptop learns of the deletion only.
     const l2 = await sync(laptop, { progress: l1.progress, journal: [], cursor: l1.cursor });
-    expect(l2.journal.map((e) => [e.id, e.deletedAt])).toEqual([['entry-gone', 300]]);
+    expect(l2.journal.map((e) => [e.id, e.deletedAt])).toEqual([['entry-gone', GONE_AT]]);
     expect(l2.cursor).toBe(p2.cursor);
 
     // An older edit sent after the cursor moved past it still gets the stored version back.
-    const l3 = await sync(laptop, { progress: l2.progress, journal: [entry('entry-gone', 250, { note: 'revived?' })], cursor: l2.cursor });
-    expect(l3.journal).toEqual([expect.objectContaining({ id: 'entry-gone', deletedAt: 300, updatedAt: 300 })]);
+    const l3 = await sync(laptop, { progress: l2.progress, journal: [entry('entry-gone', GONE_AT - 50, { note: 'revived?' })], cursor: l2.cursor });
+    expect(l3.journal).toEqual([expect.objectContaining({ id: 'entry-gone', deletedAt: GONE_AT, updatedAt: GONE_AT })]);
   });
 
   it('refuses a malformed request and another origin', async () => {
@@ -138,15 +125,53 @@ describe('DELETE /api/me/data', () => {
     await sync(other, { progress: progressOf({ merit: 3 }), journal: [entry('entry-other', 1)], cursor: 0 });
     await sync(phone, { progress: progressOf({ merit: 99 }), journal: [entry('entry-a001', 1), entry('entry-a002', 2)], cursor: 0 });
 
-    const res = await api(server, '/api/me/data', { method: 'DELETE', cookie: laptop });
-    expect(res.status).toBe(204);
+    expect((await deleteAll(laptop)).status).toBe(204);
     expect((await api(server, '/api/me', { cookie: phone })).status).toBe(200);
 
     const after = await sync(phone, { progress: EMPTY_PROGRESS, journal: [], cursor: 0 });
-    expect(after).toEqual({ progress: EMPTY_PROGRESS, journal: [], cursor: 0 });
+    expect(after).toEqual({ progress: EMPTY_PROGRESS, journal: [], cursor: 0, epoch: 2 });
     // Someone else's data is untouched.
     const theirs = await sync(other, { progress: EMPTY_PROGRESS, journal: [], cursor: 0 });
     expect(theirs.progress.merit).toBe(3);
     expect(theirs.journal.map((e) => e.id)).toEqual(['entry-other']);
+    expect(theirs.epoch).toBe(1);
+  });
+
+  it('ignores the payload of a device that synced before the wipe and sends it the account as it is now', async () => {
+    const [phone, laptop] = await twoDevices('stale-epoch');
+    const before = await sync(phone, { progress: progressOf({ merit: 50 }), journal: [entry('entry-old1', 1)], cursor: 0 });
+    expect((await deleteAll(laptop)).status).toBe(204);
+    const fresh = await sync(laptop, { progress: progressOf({ merit: 2 }), journal: [entry('entry-new1', 5)], cursor: 0 });
+    expect(fresh.epoch).toBe(2);
+
+    // The phone still holds epoch 1 and its old data: none of it is written, it gets the laptop's state from scratch.
+    const stale = await sync(phone, { progress: progressOf({ merit: 50 }), journal: [entry('entry-old1', 9), entry('entry-old2', 9)], cursor: before.cursor, epoch: before.epoch });
+    expect(stale).toEqual({ progress: progressOf({ merit: 2 }), journal: [entry('entry-new1', 5)], cursor: fresh.cursor, epoch: 2 });
+    const check = await sync(laptop, { progress: EMPTY_PROGRESS, journal: [], cursor: 0, epoch: 2 });
+    expect(check.journal.map((e) => e.id)).toEqual(['entry-new1']);
+    expect(check.progress.merit).toBe(2);
+  });
+
+  it('leaves nothing whichever of a sync and a delete runs first', async () => {
+    const [phone, laptop] = await twoDevices('race');
+    const first = await sync(phone, { progress: progressOf({ merit: 10 }), journal: [entry('entry-r001', 1)], cursor: 0 });
+    // Sent together: either the delete sees the sync's rows and removes them, or the sync finds the new epoch.
+    const [raced, deleted] = await Promise.all([
+      sync(phone, { progress: progressOf({ merit: 77 }), journal: [entry('entry-r002', 2)], cursor: first.cursor, epoch: first.epoch }),
+      deleteAll(laptop),
+    ]);
+    expect(deleted.status).toBe(204);
+    expect([1, 2]).toContain(raced.epoch);
+    const check = await sync(laptop, { progress: EMPTY_PROGRESS, journal: [], cursor: 0, epoch: 2 });
+    expect(check).toEqual({ progress: EMPTY_PROGRESS, journal: [], cursor: 0, epoch: 2 });
+  });
+
+  it('is rate limited per account', async () => {
+    idp.setSub('delete-often');
+    const session = await signIn(server);
+    for (let i = 0; i < DATA_DELETES_PER_15_MIN; i += 1) expect((await deleteAll(session)).status).toBe(204);
+    const refused = await deleteAll(session);
+    expect(refused.status).toBe(429);
+    expect(await refused.json()).toEqual({ error: 'rate-limited' });
   });
 });

@@ -7,6 +7,7 @@
 import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useAccount } from '../account/account-context';
 import { nextPollDelay } from './quiet-hour-clock';
+import { createQuietHourPoller } from './quiet-hour-poller';
 import { type QuietHourSession, type QuietHourSnapshot, createQuietHourSession } from './quiet-hour-session';
 
 const QuietHourContext = createContext<{ readonly session: QuietHourSession; readonly signedIn: boolean } | null>(null);
@@ -26,27 +27,20 @@ export function QuietHourProvider({ children }: { children: ReactNode }): ReactN
   }, [session, signedIn]);
 
   useEffect(() => {
-    let cancel: (() => void) | null = null;
-    let stopped = false;
-    const poll = async (): Promise<void> => {
-      cancel = null;
-      if (document.visibilityState === 'visible') {
+    const poller = createQuietHourPoller({
+      check: async () => {
         const result = await api.quietHourStatus();
-        if (stopped) return;
         if (result.ok) session.take(result.value, Date.now());
-      }
-      cancel = laterOnWindow(() => void poll(), nextPollDelay(session.serverNow()));
-    };
-    const onVisible = (): void => {
-      if (document.visibilityState !== 'visible') return;
-      cancel?.();
-      void poll();
-    };
-    void poll();
+      },
+      isVisible: () => document.visibilityState === 'visible',
+      nextDelay: () => nextPollDelay(session.serverNow()),
+      later: laterOnWindow,
+    });
+    const onVisible = (): void => poller.wake();
+    poller.start();
     document.addEventListener('visibilitychange', onVisible);
     return () => {
-      stopped = true;
-      cancel?.();
+      poller.stop();
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [api, session]);

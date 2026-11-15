@@ -29,13 +29,14 @@ describe('progress doc', () => {
 });
 
 describe('parseSyncBookmark', () => {
-  it('reads a valid bookmark, including a never-synced one', () => {
-    expect(parseSyncBookmark({ accountId: 'u1', cursor: 4, lastSyncedAt: 1_700_000_000_000 })).toEqual({ accountId: 'u1', cursor: 4, lastSyncedAt: 1_700_000_000_000 });
+  it('reads a valid bookmark, including a never-synced one and one stored before epochs (epoch 0)', () => {
+    expect(parseSyncBookmark({ accountId: 'u1', cursor: 4, lastSyncedAt: 1_700_000_000_000, epoch: 3 })).toEqual({ accountId: 'u1', cursor: 4, lastSyncedAt: 1_700_000_000_000, epoch: 3 });
+    expect(parseSyncBookmark({ accountId: 'u1', cursor: 4, lastSyncedAt: 1_700_000_000_000 })?.epoch).toBe(0);
     expect(parseSyncBookmark({ accountId: 'u1', cursor: 0, lastSyncedAt: 0 })?.lastSyncedAt).toBe(0);
   });
 
   it('rejects anything off', () => {
-    for (const bad of [null, [], { cursor: 1, lastSyncedAt: 0 }, { accountId: '', cursor: 1, lastSyncedAt: 0 }, { accountId: 'u', cursor: -1, lastSyncedAt: 0 }, { accountId: 'u', cursor: 1, lastSyncedAt: 'x' }]) {
+    for (const bad of [null, [], { cursor: 1, lastSyncedAt: 0 }, { accountId: '', cursor: 1, lastSyncedAt: 0 }, { accountId: 'u', cursor: -1, lastSyncedAt: 0 }, { accountId: 'u', cursor: 1, lastSyncedAt: 'x' }, { accountId: 'u', cursor: 1, lastSyncedAt: 0, epoch: -1 }]) {
       expect(parseSyncBookmark(bad)).toBeNull();
     }
   });

@@ -5,14 +5,16 @@
  * scene change showed them. On phones that stalled the frame and left the canvas blank for a moment. Also asks each
  * shadow generator to compile for everything it can cast.
  *
- * Also exports a small render guard: while the scene reports it is not ready (a shader still compiling), the loop
- * keeps the last picture on screen instead of drawing a half-built frame, for at most `MAX_HELD_FRAMES` in a row.
+ * Also exports a small render guard for the moment right after a scene change (`arm()`): for a few frames, while the
+ * scene reports it is not ready (a shader still compiling), the loop keeps the last picture on screen instead of drawing
+ * a half-built frame. Once the scene is ready or `MAX_HELD_FRAMES` frames went by, the guard disarms and frames draw
+ * as usual; a disarmed guard never asks the scene (`isReady()` walks every mesh, too costly for every frame).
  */
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { Scene } from '@babylonjs/core/scene';
 
-/** Beyond this many held frames in a row (about a quarter second) the frame is drawn anyway. */
-const MAX_HELD_FRAMES = 15;
+/** An armed guard holds at most this many frames (about a third of a second) before drawing anyway. */
+export const MAX_HELD_FRAMES = 20;
 
 async function compileMeshMaterial(mesh: Mesh): Promise<void> {
   const material = mesh.material;
@@ -41,19 +43,28 @@ export async function warmUpScene(scene: Scene): Promise<void> {
   }
 }
 
-/** Decides each frame whether to draw: false while a shader is still compiling, with a cap so it never sticks. */
-export function createRenderGuard(scene: Scene): () => boolean {
-  let held = 0;
-  return () => {
-    if (scene.isReady()) {
-      held = 0;
-      return true;
-    }
-    held += 1;
-    if (held > MAX_HELD_FRAMES) {
-      held = 0;
-      return true;
-    }
-    return false;
+export interface RenderGuard {
+  /** A scene change happened: guard the next frames until the scene is ready (at most MAX_HELD_FRAMES held). */
+  arm(): void;
+  /** Called each frame: false to keep the last picture this frame. */
+  canDraw(): boolean;
+}
+
+/** `isReady` is the scene's readiness (scene.isReady in the app); only asked while armed. */
+export function createRenderGuard(isReady: () => boolean): RenderGuard {
+  let budget = 0;
+  return {
+    arm() {
+      budget = MAX_HELD_FRAMES;
+    },
+    canDraw() {
+      if (budget === 0) return true;
+      if (isReady()) {
+        budget = 0;
+        return true;
+      }
+      budget -= 1;
+      return false;
+    },
   };
 }

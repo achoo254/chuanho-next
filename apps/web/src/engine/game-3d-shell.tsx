@@ -128,6 +128,7 @@ export function Game3dShell(): ReactNode {
   }, []);
   useEffect(() => {
     world?.stage.setMode(mode);
+    world?.armRenderGuard();
   }, [world, mode]);
   useEffect(() => {
     world?.setInputEnabled(started && !infoOpen && mode === 'yard');

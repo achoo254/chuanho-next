@@ -31,16 +31,16 @@ describe('account api', () => {
   });
 
   it('posts a sync and reads the answer with the contract parser', async () => {
-    const { api, fetcher } = apiAnswering(json(200, { progress: EMPTY_PROGRESS, journal: [{ id: 'bad' }], cursor: 3 }));
-    const result = await api.sync({ progress: EMPTY_PROGRESS, journal: [], cursor: 0 });
-    expect(result).toEqual({ ok: true, value: { progress: EMPTY_PROGRESS, journal: [], cursor: 3 } });
+    const { api, fetcher } = apiAnswering(json(200, { progress: EMPTY_PROGRESS, journal: [{ id: 'bad' }], cursor: 3, epoch: 2 }));
+    const result = await api.sync({ progress: EMPTY_PROGRESS, journal: [], cursor: 0, epoch: 0 });
+    expect(result).toEqual({ ok: true, value: { progress: EMPTY_PROGRESS, journal: [], cursor: 3, epoch: 2 } });
     const init = fetcher.mock.calls[0]?.[1];
     expect(init?.method).toBe('POST');
     expect(init?.headers).toMatchObject({ 'Content-Type': 'application/json' });
   });
 
   it('reports a full journal as a conflict with its code', async () => {
-    const result = await apiAnswering(json(409, { error: 'journal-full' })).api.sync({ progress: EMPTY_PROGRESS, journal: [], cursor: 0 });
+    const result = await apiAnswering(json(409, { error: 'journal-full' })).api.sync({ progress: EMPTY_PROGRESS, journal: [], cursor: 0, epoch: 0 });
     expect(result).toEqual({ ok: false, error: { kind: 'conflict', code: 'journal-full' } });
   });
 

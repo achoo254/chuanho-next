@@ -60,6 +60,8 @@ export interface BabylonWorld {
   pickPropAt(clientX: number, clientY: number): InteractivePropId | null;
   /** The play modes' handle on the scene: character, wooden fish, incense, note orbs, share shot. */
   readonly stage: PlayStage;
+  /** Call right after a scene change (such as `stage.setMode`): the next frames wait for its shaders (warm-up-scene.ts). */
+  armRenderGuard(): void;
   dispose(): void;
 }
 
@@ -169,7 +171,7 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
     checkAborted();
     options.onProgress(1);
 
-    const canDraw = createRenderGuard(scene);
+    const guard = createRenderGuard(() => scene.isReady());
     let timeMs = 0;
     let fpsWindowMs = 0;
     const renderFrame = (): void => {
@@ -183,8 +185,8 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
       lighting.update(deltaMs);
       pulse.update(deltaMs);
       stage.update(deltaMs);
-      // While a shader is still compiling the last picture stays up instead of a half-built (blank) frame.
-      if (canDraw()) scene.render();
+      // Just after a scene change, while a shader still compiles, the last picture stays up instead of a blank frame.
+      if (guard.canDraw()) scene.render();
       scaler.onFrame(deltaMs);
       fpsWindowMs += deltaMs;
       if (fpsWindowMs >= 1000) {
@@ -226,6 +228,7 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
       },
       pickPropAt: (x, y) => picking.pickPropAt(x, y),
       stage,
+      armRenderGuard: () => guard.arm(),
       dispose: disposeAll,
     };
     return { kind: 'ready', world };

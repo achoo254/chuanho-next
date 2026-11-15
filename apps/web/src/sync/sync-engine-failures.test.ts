@@ -32,12 +32,13 @@ describe('sync engine: failures', () => {
     expect(t.engine.getStatus().state).toBe('offline');
   });
 
-  it('hands a 401 to the account and forgets the bookmark', async () => {
-    const t = setup({ stored: { accountId: 'user-1', cursor: 4, lastSyncedAt: 5 }, replies: [{ ok: false, error: { kind: 'unauthorized' } }] });
+  it('hands a 401 to the account and keeps the bookmark as the owner mark of the data', async () => {
+    const stored = { accountId: 'user-1', cursor: 4, lastSyncedAt: 5, epoch: 2 };
+    const t = setup({ stored, replies: [{ ok: false, error: { kind: 'unauthorized' } }] });
     t.engine.start('user-1');
     await settle();
     expect(t.onUnauthorized).toHaveBeenCalledOnce();
-    expect(t.storage.value).toBeNull();
+    expect(t.storage.value).toEqual(stored);
     expect(t.engine.getStatus()).toEqual({ state: 'idle', lastSyncedAt: null, full: [] });
     expect(t.clock.delays()).toEqual([]);
   });
@@ -57,7 +58,7 @@ describe('sync engine: failures', () => {
 
 describe('sync engine: stopping and starting over', () => {
   it('ignores an answer that arrives after stopping, and forgets the bookmark when asked', async () => {
-    const t = setup({ stored: { accountId: 'user-1', cursor: 4, lastSyncedAt: 5 } });
+    const t = setup({ stored: { accountId: 'user-1', cursor: 4, lastSyncedAt: 5, epoch: 1 } });
     let release: (reply: Reply) => void = () => undefined;
     t.send.mockImplementationOnce(() => new Promise<Reply>((resolve) => (release = resolve)));
     t.engine.start('user-1');

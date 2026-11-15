@@ -1,14 +1,19 @@
 /**
  * Account sync, local-first: the game never waits for it. While an account is signed in it syncs right away (the first
  * sync of an account uploads everything on the device), then every minute, when the tab comes back into view, and a
- * few seconds after a local change. One request at a time; a change during a request syncs again after it.
+ * few seconds after a local change. One request at a time; a change during a request syncs again after it. A
+ * collection that holds part of its changes back (a large journal) gets follow-up requests right away, and the sync
+ * only counts as done (`lastSyncedAt` moves) once all of them went through.
+ *
+ * Every request carries the account's data epoch (see sync-answer.ts for a newer one in the answer).
  *
  * Failures never lose local data: offline or a server error retries with a growing pause; 401 hands over to the
- * account (now a guest); a collection the server reports full (409) stops sending, keeps receiving, and the status
- * says so. Pure core: the network, the clock, timers and storage are injected.
+ * account (now a guest; the bookmark stays as the data's owner mark); a collection the server reports full (409) stops
+ * sending, keeps receiving, and the status says so. Pure core: the network, the clock, timers and storage are injected.
  */
-import { EMPTY_PROGRESS, type SyncResponse } from '@chuanho/contract';
+import type { SyncRequest, SyncResponse } from '@chuanho/contract';
 import type { ApiResult } from '../account/account-api';
+import { EMPTY_PAYLOAD, takeSyncAnswer } from './sync-answer';
 import type { SyncEngine, SyncEngineDeps, SyncStatus } from './sync-engine-types';
 import type { SyncBookmark } from './sync-state-storage';
 import type { SyncPayload, SyncedCollection } from './synced-collection';
@@ -23,7 +28,6 @@ const RETRY_MAX_MS = 5 * 60_000;
 const VISIBLE_MIN_GAP_MS = 10_000;
 
 const IDLE: SyncStatus = { state: 'idle', lastSyncedAt: null, full: [] };
-const EMPTY_PAYLOAD: SyncPayload = { progress: EMPTY_PROGRESS, journal: [] };
 
 export const retryDelay = (failures: number): number => Math.min(RETRY_MAX_MS, RETRY_FIRST_MS * 2 ** Math.max(0, failures - 1));
 
@@ -38,6 +42,8 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
   let again = false;
   let failures = 0;
   let lastAttemptAt = 0;
+  /** Start time of the first request of a sync still sending held-back changes; null when none is under way. */
+  let drainingSince: number | null = null;
   let cancelTimer: (() => void) | null = null;
 
   const setStatus = (next: Partial<SyncStatus>): void => {
@@ -59,7 +65,7 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     schedule(retryDelay(failures));
   };
 
-  async function send(request: SyncPayload & { readonly cursor: number }): Promise<ApiResult<SyncResponse>> {
+  async function send(request: SyncRequest): Promise<ApiResult<SyncResponse>> {
     try {
       return await deps.send(request);
     } catch {
@@ -76,32 +82,40 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     }
     const mine = generation;
     const since = current.lastSyncedAt;
-    const startedAt = clock.now();
+    const startedAt = drainingSince ?? clock.now();
     const sent: SyncPayload = Object.assign({}, EMPTY_PAYLOAD, ...active().map((collection) => collection.collect(since)));
     inFlight = true;
     again = false;
-    lastAttemptAt = startedAt;
+    lastAttemptAt = clock.now();
     cancelTimer?.();
     setStatus({ state: 'syncing' });
-    const result = await send({ ...sent, cursor: current.cursor });
+    const result = await send({ ...sent, cursor: current.cursor, epoch: current.epoch });
     // Stopped, restarted or switched account while the request was out: its answer belongs to nobody now.
     if (mine !== generation) return;
     inFlight = false;
 
     if (result.ok) {
-      for (const collection of collections) collection.apply(result.value, sent);
-      bookmark = { accountId: current.accountId, cursor: result.value.cursor, lastSyncedAt: startedAt };
+      const taken = takeSyncAnswer({ collections, active: active(), discardLocal: deps.discardLocal, now: clock.now() }, current, result.value, sent, startedAt);
+      bookmark = taken.bookmark;
       storage.save(bookmark);
       failures = 0;
-      setStatus({ state: 'idle', lastSyncedAt: startedAt });
+      if (taken.more) {
+        drainingSince = startedAt;
+        void run();
+        return;
+      }
+      drainingSince = null;
+      const doneAt = bookmark.lastSyncedAt;
+      setStatus({ state: 'idle', lastSyncedAt: doneAt });
       // A change made while the request was out goes in its own sync, after the usual short pause.
-      schedule(again && hasPending(startedAt) ? SYNC_AFTER_CHANGE_MS : SYNC_EVERY_MS);
+      schedule(again && hasPending(doneAt) ? SYNC_AFTER_CHANGE_MS : SYNC_EVERY_MS);
       again = false;
       return;
     }
     const { error } = result;
     if (error.kind === 'unauthorized') {
-      engine.stop({ forget: true });
+      // The bookmark stays: the device's data still belongs to this account (see sync-state-storage.ts).
+      engine.stop();
       deps.onUnauthorized();
       return;
     }
@@ -123,18 +137,23 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     again = false;
     failures = 0;
     full = new Set();
+    drainingSince = null;
     bookmark = next;
     for (const collection of collections) collection.reset();
   };
 
   const engine: SyncEngine = {
-    start(accountId) {
-      if (bookmark?.accountId === accountId) return;
+    start(accountId, options) {
+      if (bookmark?.accountId === accountId && !options?.fromNow) return;
       const stored = storage.load();
-      const next = stored?.accountId === accountId ? stored : { accountId, cursor: 0, lastSyncedAt: 0 };
-      if (stored && stored !== next) storage.clear();
+      const next =
+        stored?.accountId === accountId && !options?.fromNow
+          ? stored
+          : { accountId, cursor: 0, lastSyncedAt: options?.fromNow ? clock.now() + 1 : 0, epoch: 0 };
       resetRun(next);
-      status = { ...IDLE, lastSyncedAt: next.lastSyncedAt > 0 ? next.lastSyncedAt : null };
+      // Saved now, not after the first sync: it marks the device's data as this account's from this moment.
+      storage.save(next);
+      status = { ...IDLE, lastSyncedAt: next.lastSyncedAt > 0 && !options?.fromNow ? next.lastSyncedAt : null };
       void run();
     },
     stop(options) {
@@ -156,12 +175,8 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
       void run();
     },
     restartFromNow() {
-      if (!bookmark) return;
-      const next = { accountId: bookmark.accountId, cursor: 0, lastSyncedAt: clock.now() + 1 };
-      resetRun(next);
-      storage.save(next);
-      setStatus({ state: 'idle', full: [] });
-      void run();
+      // Epoch 0: the server takes this device's (empty) state and answers the account's new epoch.
+      if (bookmark) engine.start(bookmark.accountId, { fromNow: true });
     },
     getStatus: () => status,
     subscribe(listener) {

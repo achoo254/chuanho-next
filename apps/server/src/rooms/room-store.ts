@@ -2,22 +2,11 @@
  * The shared incense rooms, kept in memory only: a room and every wish in it live as long as its incense and are
  * forgotten after (nothing is written to the database, nothing survives a restart). The store holds the rules (who may
  * do what, the limits, the burn-out); the routes only translate HTTP. Time and ids come from outside, so every rule is
- * tested on a clock the test moves.
+ * tested on a clock the test moves. A request settles only the room it touches; `sweep` (on a timer) walks them all.
  */
-import {
-  ROOM_ASHES_GRACE_MS,
-  ROOM_IDLE_TTL_MS,
-  ROOM_MAX_MEMBERS,
-  ROOM_OPEN_ROOMS_PER_USER,
-  ROOM_REPORTS_TO_HIDE,
-  ROOM_WISHES_PER_MEMBER,
-  ROOM_WISH_INTERVAL_MS,
-  type RoomCreateInput,
-  type RoomSnapshot,
-  checkWish,
-  roomStatus,
-} from '@chuanho/contract';
-import { type Member, type Room, RoomError, type Wish, roomSnapshot } from './room-model';
+import { ROOM_MAX_MEMBERS, ROOM_OPEN_ROOMS_PER_USER, type RoomCreateInput, type RoomSnapshot, roomStatus } from '@chuanho/contract';
+import { type Member, type Room, RoomError, type SharedRoomSnapshot, type ViewerFields, isExpired, removeWishes, roomSnapshot, sharedSnapshot, viewerFields } from './room-model';
+import { addWish, deleteWish, reportWish } from './room-wish-rules';
 
 export interface RoomStoreOptions {
   readonly now: () => number;
@@ -25,7 +14,7 @@ export interface RoomStoreOptions {
   readonly newId: () => string;
   /** A random room code (ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH); retried on a clash. */
   readonly newCode: () => string;
-  /** Rooms that just turned to ashes (to push) or were deleted (to close their streams), after any sweep. */
+  /** Rooms that just turned to ashes (to push) or were deleted (to close their streams). */
   readonly onSweep?: (result: SweepResult) => void;
   /** Moderation log line; never given wish text. */
   readonly log?: (line: string) => void;
@@ -36,6 +25,12 @@ export interface SweepResult {
   readonly purged: readonly string[];
 }
 
+/** One room as its event streams need it: the shared part once, the per-viewer part per stream (null: not in it). */
+export interface RoomStreamView {
+  readonly shared: SharedRoomSnapshot;
+  viewer(userId: string): ViewerFields | null;
+}
+
 const CODE_ATTEMPTS = 20;
 
 export class RoomStore {
@@ -44,27 +39,23 @@ export class RoomStore {
   constructor(private readonly options: RoomStoreOptions) {}
 
   create(userId: string, name: string, input: RoomCreateInput): RoomSnapshot {
-    this.sweep();
-    const hosting = [...this.rooms.values()].filter((room) => room.ashesAt === null && this.hostOf(room)?.userId === userId).length;
+    const now = this.options.now();
+    const hosting = [...this.rooms.values()].filter(
+      (room) =>
+        room.ashesAt === null && !isExpired(room, now) && roomStatus([...room.members.values()], now) === 'open' && room.members.get(userId)?.id === room.hostMemberId,
+    ).length;
     if (hosting >= ROOM_OPEN_ROOMS_PER_USER) throw new RoomError('too-many-rooms');
     const code = this.unusedCode();
     const host = this.newMember(userId, name);
-    const room: Room = {
-      code,
-      input,
-      hostMemberId: host.id,
-      locked: false,
-      members: new Map([[userId, host]]),
-      wishes: [],
-      litTotal: 0,
-      lastActivityAt: this.options.now(),
-      ashesAt: null,
-    };
+    const room: Room = { code, input, hostMemberId: host.id, locked: false, members: new Map([[userId, host]]), departed: new Map(), wishes: [], litTotal: 0, lastActivityAt: now, ashesAt: null };
     this.rooms.set(code, room);
     return this.view(room, host);
   }
 
-  /** Joins (or re-enters) a room; an existing member always gets back in, even when it is locked, full or in ashes. */
+  /**
+   * Joins (or re-enters) a room; an existing member always gets back in, even when it is locked, full or in ashes. One
+   * who left comes back as the same member (stick, wish count and report kept) under the same rules as a newcomer.
+   */
   join(code: string, userId: string, name: string): RoomSnapshot {
     const room = this.room(code);
     const existing = room.members.get(userId);
@@ -72,22 +63,24 @@ export class RoomStore {
     if (room.ashesAt !== null) throw new RoomError('room-ashes');
     if (room.locked) throw new RoomError('room-locked');
     if (room.members.size >= ROOM_MAX_MEMBERS) throw new RoomError('room-full');
-    const member = this.newMember(userId, name);
+    const former = room.departed.get(userId);
+    room.departed.delete(userId);
+    const member = former ? { ...former, name } : this.newMember(userId, name);
     room.members.set(userId, member);
     room.lastActivityAt = this.options.now();
     return this.view(room, member);
   }
 
-  /** Leaves: the member, their stick and their wishes go; the earliest member left becomes host; empty rooms close. */
+  /** Leaves: the member's stick and wishes leave the room with them; the earliest member left becomes host; empty rooms close. */
   leave(code: string, userId: string): void {
     const room = this.room(code);
     const member = this.memberOf(room, userId);
     room.members.delete(userId);
-    room.wishes = room.wishes.filter((wish) => wish.memberId !== member.id);
+    room.departed.set(userId, member);
+    removeWishes(room, (wish) => wish.memberId === member.id);
     const next = room.members.values().next();
     if (next.done) {
-      this.rooms.delete(code);
-      this.options.onSweep?.({ turnedToAshes: [], purged: [code] });
+      this.purge(room);
       return;
     }
     if (room.hostMemberId === member.id) room.hostMemberId = next.value.id;
@@ -104,43 +97,23 @@ export class RoomStore {
     return this.view(room, member);
   }
 
-  /** Adds a wish after the filter (authoritative here) and the per-member limits. */
   addWish(code: string, userId: string, raw: string): RoomSnapshot {
     const { room, member } = this.openRoomMember(code, userId);
-    const checked = checkWish(raw);
-    if (!checked.ok) throw new RoomError('wish-rejected', checked.reason);
-    if (member.wishCount >= ROOM_WISHES_PER_MEMBER) throw new RoomError('wish-limit');
-    const now = this.options.now();
-    if (member.lastWishAt !== null && now - member.lastWishAt < ROOM_WISH_INTERVAL_MS) throw new RoomError('wish-too-fast');
-    room.wishes.push({ id: this.options.newId(), memberId: member.id, text: checked.text, at: now, reports: 0 });
-    member.wishCount += 1;
-    member.lastWishAt = now;
-    room.lastActivityAt = now;
+    addWish(room, member, raw, this.options.now(), this.options.newId());
     return this.view(room, member);
   }
 
-  /** The host may delete any wish, an author their own. */
   deleteWish(code: string, userId: string, wishId: string): RoomSnapshot {
     const room = this.room(code);
     const member = this.memberOf(room, userId);
-    const wish = this.wishOf(room, wishId);
-    if (wish.memberId !== member.id && room.hostMemberId !== member.id) throw new RoomError('not-allowed');
-    room.wishes = room.wishes.filter((other) => other.id !== wish.id);
+    deleteWish(room, member, wishId);
     return this.view(room, member);
   }
 
-  /** One report per member per room; enough reports take the wish down. Only a count is kept, never who or what. */
   report(code: string, userId: string, wishId: string): RoomSnapshot {
     const room = this.room(code);
     const member = this.memberOf(room, userId);
-    const wish = this.wishOf(room, wishId);
-    if (wish.memberId === member.id) throw new RoomError('own-wish');
-    if (member.reportedWishId !== null) throw new RoomError('already-reported');
-    member.reportedWishId = wish.id;
-    wish.reports += 1;
-    const takenDown = wish.reports >= ROOM_REPORTS_TO_HIDE;
-    if (takenDown) room.wishes = room.wishes.filter((other) => other.id !== wish.id);
-    this.options.log?.(`room wish reported: ${wish.reports}/${ROOM_REPORTS_TO_HIDE}${takenDown ? ', taken down' : ''}`);
+    this.options.log?.(reportWish(room, member, wishId));
     return this.view(room, member);
   }
 
@@ -159,11 +132,17 @@ export class RoomStore {
     return this.view(room, this.memberOf(room, userId));
   }
 
-  /** `snapshot` without sweeping, or null when the room is gone or the account left (for pushing to open streams). */
-  snapshotOrNull(code: string, userId: string): RoomSnapshot | null {
+  /** The room for its open streams, without settling, or null when it is gone. */
+  streamView(code: string): RoomStreamView | null {
     const room = this.rooms.get(code);
-    const member = room?.members.get(userId);
-    return room && member ? this.view(room, member) : null;
+    if (!room) return null;
+    return {
+      shared: sharedSnapshot(room, this.options.now()),
+      viewer: (userId) => {
+        const member = room.members.get(userId);
+        return member ? viewerFields(member) : null;
+      },
+    };
   }
 
   /** Turns burnt-out rooms to ashes (wishes deleted) and deletes rooms past their grace or idle time. */
@@ -171,18 +150,15 @@ export class RoomStore {
     const now = this.options.now();
     const turnedToAshes: string[] = [];
     const purged: string[] = [];
-    for (const room of this.rooms.values()) {
-      if (this.settle(room)) turnedToAshes.push(room.code);
-      const ashesOver = room.ashesAt !== null && now >= room.ashesAt + ROOM_ASHES_GRACE_MS;
-      const anyStick = [...room.members.values()].some((member) => member.stick !== null);
-      const idle = !anyStick && now >= room.lastActivityAt + ROOM_IDLE_TTL_MS;
-      if (ashesOver || idle) {
+    for (const room of [...this.rooms.values()]) {
+      const turned = this.settle(room);
+      if (isExpired(room, now)) {
         this.rooms.delete(room.code);
         purged.push(room.code);
-      }
+      } else if (turned) turnedToAshes.push(room.code);
     }
-    const result = { turnedToAshes: turnedToAshes.filter((code) => !purged.includes(code)), purged };
-    if (result.turnedToAshes.length > 0 || purged.length > 0) this.options.onSweep?.(result);
+    const result = { turnedToAshes, purged };
+    if (turnedToAshes.length > 0 || purged.length > 0) this.options.onSweep?.(result);
     return result;
   }
 
@@ -197,32 +173,32 @@ export class RoomStore {
     const members = [...room.members.values()];
     if (roomStatus(members, this.options.now()) !== 'ashes') return false;
     room.ashesAt = Math.max(...members.map((member) => member.stick?.burnsOutAt ?? 0));
-    room.wishes = [];
+    removeWishes(room, () => true);
     return true;
+  }
+
+  private purge(room: Room): void {
+    this.rooms.delete(room.code);
+    this.options.onSweep?.({ turnedToAshes: [], purged: [room.code] });
   }
 
   /** A live room by code, settled to the current time; `room-not-found` for an unknown or expired one. */
   private room(code: string): Room {
-    this.sweep();
     const room = this.rooms.get(code);
     if (!room) throw new RoomError('room-not-found');
+    const turned = this.settle(room);
+    if (isExpired(room, this.options.now())) {
+      this.purge(room);
+      throw new RoomError('room-not-found');
+    }
+    if (turned) this.options.onSweep?.({ turnedToAshes: [room.code], purged: [] });
     return room;
-  }
-
-  private hostOf(room: Room): Member | undefined {
-    return [...room.members.values()].find((member) => member.id === room.hostMemberId);
   }
 
   private memberOf(room: Room, userId: string): Member {
     const member = room.members.get(userId);
     if (!member) throw new RoomError('not-member');
     return member;
-  }
-
-  private wishOf(room: Room, wishId: string): Wish {
-    const wish = room.wishes.find((candidate) => candidate.id === wishId);
-    if (!wish) throw new RoomError('wish-not-found');
-    return wish;
   }
 
   private openRoomMember(code: string, userId: string): { room: Room; member: Member } {
