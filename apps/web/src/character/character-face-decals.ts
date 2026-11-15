@@ -1,7 +1,7 @@
 /**
  * The face as three decals wrapped on the front of the skull: eyes, mouth and pink cheeks, each swapping between
- * the drawn shapes. Decal look: the drawing's own colours, shaded only a little by the scene's light (a warm sunset
- * would otherwise turn pink cheeks orange), no shine, and pulled towards the camera so it never flickers.
+ * the drawn shapes. Decal look: the drawing's own colours, shaded by the scene's light like the head (a small self-lit
+ * share keeps pink cheeks from turning orange under a warm sunset), no shine, and pulled towards the camera so it never flickers.
  */
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import type { BaseTexture } from '@babylonjs/core/Materials/Textures/baseTexture';
@@ -22,8 +22,10 @@ function decalMaterial(scene: Scene, name: string, texture: BaseTexture, alpha =
   const material = new StandardMaterial(name, scene);
   material.diffuseTexture = texture;
   material.emissiveTexture = texture;
-  material.emissiveColor = new Color3(0.6, 0.6, 0.6);
-  material.diffuseColor = new Color3(0.45, 0.45, 0.45);
+  // Mostly lit by the scene like the skull it sits on (a strongly self-lit face glowed at night while the head went dark);
+  // the small self-lit share keeps the drawing readable in shade and the cheeks pink under warm light.
+  material.emissiveColor = new Color3(0.14, 0.14, 0.14);
+  material.diffuseColor = new Color3(0.9, 0.9, 0.9);
   material.specularColor = Color3.Black();
   material.useAlphaFromDiffuseTexture = true;
   material.alpha = alpha;
