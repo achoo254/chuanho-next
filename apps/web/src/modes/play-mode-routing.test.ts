@@ -17,8 +17,13 @@ describe('routeActions', () => {
     expect(routeActions(PROP_ACTIONS.bowl)).toEqual({ kind: 'sound', sample: 'bowl' });
   });
 
-  it('keeps the journal and radio as coming soon', () => {
-    expect(routeActions(PROP_ACTIONS.woodenBoard)).toEqual({ kind: 'soon', actions: ['journal', 'radio'] });
+  it('offers the journal, the gentle-words tool and the radio from the board', () => {
+    expect(routeActions(PROP_ACTIONS.woodenBoard)).toEqual({ kind: 'choose', actions: ['journal', 'gentle', 'radio'] });
+  });
+
+  it('keeps what needs the server as coming soon', () => {
+    expect(routeActions(['fortune'])).toEqual({ kind: 'soon', actions: ['fortune'] });
+    expect(routeActions(['room'])).toEqual({ kind: 'soon', actions: ['room'] });
   });
 
   it('opens a single shortcut action directly and strikes on Space', () => {
@@ -33,7 +38,7 @@ describe('modeForAction', () => {
   it('maps the playable actions only', () => {
     expect(modeForAction('incense')).toBe('incense');
     expect(modeForAction('bell')).toBeNull();
-    expect(modeForAction('radio')).toBeNull();
+    expect(modeForAction('radio')).toBe('radio');
   });
 });
 

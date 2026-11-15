@@ -10,15 +10,17 @@ describe('world actions', () => {
     expect(actionsForProp(undefined)).toEqual([]);
   });
 
-  it('send the censer to incense, the wooden fish to both drumming modes and the board to what is coming', () => {
+  it('send the censer to incense, the wooden fish to both drumming modes and the board to its three tools', () => {
     expect(actionsForProp('censer')).toEqual(['incense']);
     expect(actionsForProp('mo')).toEqual(['beat', 'endless']);
-    expect(actionsForProp('woodenBoard').every(isComingSoon)).toBe(true);
+    expect(actionsForProp('woodenBoard')).toEqual(['journal', 'gentle', 'radio']);
+    expect(actionsForProp('woodenBoard').some(isComingSoon)).toBe(false);
     expect(isComingSoon('incense')).toBe(false);
   });
 
   it('find the prop behind each corner-bar action so it can glow', () => {
-    for (const action of SHORTCUT_BAR_ACTIONS) expect(propForAction(action)).not.toBeNull();
+    // Fortune and the room have no prop in the yard yet (a fortune tube and a lantern would be their props).
+    for (const action of SHORTCUT_BAR_ACTIONS.filter((a) => a !== 'fortune' && a !== 'room')) expect(propForAction(action)).not.toBeNull();
     expect(propForAction('strike')).toBe('mo');
   });
 });

@@ -1,0 +1,13 @@
+{
+  "name": "@chuanho/contract",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Hợp đồng dữ liệu giữa web và server của Chùa Nhỏ: kiểu, bộ kiểm tra và hàm gộp thuần, không phụ thuộc gói nào",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  }
+}

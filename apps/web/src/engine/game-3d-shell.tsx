@@ -20,7 +20,7 @@ import type { KeyCommand } from '../input/keyboard-commands';
 import { useKeyboardCommands } from '../input/use-keyboard-commands';
 import { playDemoParams } from '../modes/play-demo-params';
 import { PlayModeLayer } from '../modes/play-mode-layer';
-import { type PlayMode, STRIKE_MODES, routeActions } from '../modes/play-mode-routing';
+import { type PlayMode, routeActions } from '../modes/play-mode-routing';
 import '../modes/play-modes.css';
 import { playStrikeFeedback } from '../modes/strike-feedback';
 import { requestTiltPermission } from '../scene/use-parallax-tilt';
@@ -168,8 +168,9 @@ export function Game3dShell(): ReactNode {
         return;
       }
       if (command.action === 'strike') {
-        if (STRIKE_MODES.has(mode)) strikeRef.current?.(eventTimeMs);
-        else if (mode === 'yard') yardStrike();
+        // Any mode that registered a strike handler (drumming modes, and panels that ask for strokes) gets Space.
+        if (mode === 'yard') yardStrike();
+        else strikeRef.current?.(eventTimeMs);
         return;
       }
       runAction(command.action);
@@ -185,6 +186,8 @@ export function Game3dShell(): ReactNode {
     },
     [world],
   );
+
+  const lighting = useMemo(() => ({ preset, set: changePreset }), [preset, changePreset]);
 
   const toggleSound = useCallback((): void => {
     const ctx = audioEngine()?.ctx;
@@ -222,7 +225,7 @@ export function Game3dShell(): ReactNode {
       {status === 'loading' && <LoadingScreen progress={loaded} />}
       {status === 'ready' && world && (
         <>
-          {started && <PlayModeLayer mode={mode} world={world} previewSongMs={demo.songMs} onBack={toYard} onOpen={open} onSessionComplete={toSessionEnd} registerStrike={registerStrike} />}
+          {started && <PlayModeLayer mode={mode} world={world} previewSongMs={demo.songMs} lighting={lighting} onBack={toYard} onOpen={open} onSessionComplete={toSessionEnd} registerStrike={registerStrike} />}
           {started && (
             <GameHud
               preset={preset}

@@ -3,7 +3,7 @@
  * by the scene (which prop was tapped), the corner icon bar (the same actions without aiming) and the keyboard.
  */
 
-export const WORLD_ACTIONS = ['incense', 'beat', 'endless', 'sutra', 'bell', 'bowl', 'journal', 'radio', 'strike'] as const;
+export const WORLD_ACTIONS = ['incense', 'beat', 'endless', 'sutra', 'bell', 'bowl', 'journal', 'gentle', 'radio', 'fortune', 'room', 'strike'] as const;
 export type WorldAction = (typeof WORLD_ACTIONS)[number];
 
 export const INTERACTIVE_PROPS = ['censer', 'sutraShelf', 'mo', 'bell', 'bowl', 'woodenBoard'] as const;
@@ -16,14 +16,14 @@ export const PROP_ACTIONS: Readonly<Record<InteractivePropId, readonly WorldActi
   mo: ['beat', 'endless'],
   bell: ['bell'],
   bowl: ['bowl'],
-  woodenBoard: ['journal', 'radio'],
+  woodenBoard: ['journal', 'gentle', 'radio'],
 };
 
 /** Actions whose screens do not exist yet: they show a "coming soon" mark instead. */
-const COMING_SOON: ReadonlySet<WorldAction> = new Set<WorldAction>(['journal', 'radio']);
+const COMING_SOON: ReadonlySet<WorldAction> = new Set<WorldAction>(['fortune', 'room']);
 
 /** The corner icon bar: every action reachable without aiming at the scene. */
-export const SHORTCUT_BAR_ACTIONS: readonly WorldAction[] = ['incense', 'beat', 'sutra', 'endless', 'journal', 'radio'];
+export const SHORTCUT_BAR_ACTIONS: readonly WorldAction[] = ['incense', 'beat', 'sutra', 'endless', 'journal', 'gentle', 'radio', 'fortune', 'room'];
 
 /** Number keys 1–3 pick the three steps of a session, in order. */
 export const NUMBER_KEY_ACTIONS: readonly WorldAction[] = ['incense', 'beat', 'sutra'];

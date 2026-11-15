@@ -37,6 +37,12 @@ const MODE_LOOK: Readonly<Record<Exclude<PlayMode, 'yard'>, { pose: PoseName; sh
   sutra: { pose: 'beads', shot: 'sutra', spot: 'mo' },
   sessionEnd: { pose: 'cheer', shot: 'drum', spot: 'mo' },
   share: { pose: 'cheer', shot: 'drum', spot: 'mo' },
+  // HTML panels: the character keeps company in a calm pose while the panel is open.
+  journal: { pose: 'palms', shot: 'incense', spot: 'pray' },
+  gentle: { pose: 'palms', shot: 'incense', spot: 'pray' },
+  radio: { pose: 'beads', shot: 'sutra', spot: 'mo' },
+  fortune: { pose: 'palms', shot: 'incense', spot: 'pray' },
+  room: { pose: 'palms', shot: 'incense', spot: 'pray' },
 };
 
 /** The scene a tap on a prop makes likelier next (the character wants a go too). */

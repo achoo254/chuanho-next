@@ -24,6 +24,9 @@ const PATHS = {
   bowl: 'M3 11h18a9 9 0 0 1-18 0zM8 21h8M12 20v1',
   journal: 'M12 6c-2-1.5-5-2-9-2v15c4 0 7 .5 9 2 2-1.5 5-2 9-2V4c-4 0-7 .5-9 2zM12 6v15',
   radio: 'M4 9h16v11H4zM8 9l8-5M8 15a2 2 0 1 0 0-.01M14 13h3M14 16h3',
+  gentle: 'M4 5h16v10H9l-5 4zM8 9h8M8 12h5',
+  fortune: 'M8 3h8v3H8zM9 6l-1 15h8l-1-15M12 10v3M10.5 15h3',
+  room: 'M9 9a3 3 0 1 0 0-.01M2.5 20c.5-3.5 3-5 6.5-5s6 1.5 6.5 5M17 8a2.5 2.5 0 1 0 0-.01M17.5 14c2.5.3 4 1.7 4.5 4.5',
   soon: 'M7 3h10M7 21h10M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9',
   play: 'M8 5v14l11-7z',
   close: 'M6 6l12 12M18 6 6 18',
@@ -46,7 +49,10 @@ export const ACTION_ICONS: Readonly<Record<WorldAction, IconName>> = {
   bell: 'bell',
   bowl: 'bowl',
   journal: 'journal',
+  gentle: 'gentle',
   radio: 'radio',
+  fortune: 'fortune',
+  room: 'room',
   strike: 'mo',
 };
 

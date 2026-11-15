@@ -1,0 +1,124 @@
+/* The shared panel card of the feature screens (see panel-frame.tsx) and the small parts they all reuse: lists,
+   choice chips, text fields. Colours and sizes only from tokens.css; every control at least --tap tall. */
+
+.panel-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: min(460px, calc(100vw - 2 * var(--space-4)));
+  max-height: calc(100dvh - 160px);
+  padding: var(--space-5);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  background: var(--c-scrim);
+  color: var(--c-text);
+  transform: translate(-50%, -55%);
+  animation: game3d-pop var(--dur-pop) var(--ease-standard);
+}
+.panel-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--c-primary);
+  text-align: center;
+}
+.panel-body {
+  display: grid;
+  gap: var(--space-3);
+  min-height: 0;
+  overflow-y: auto;
+}
+.panel-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.panel-note {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+.panel-line {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* A wrapping row of pressable choices (kinds, situations, tones, durations). */
+.panel-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  list-style: none;
+}
+.panel-choice {
+  min-height: var(--tap);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-full);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.panel-choice[aria-pressed='true'],
+.panel-choice[aria-checked='true'] {
+  border-color: var(--c-primary);
+  background: var(--c-surface-raised);
+  color: var(--c-primary);
+}
+.panel-choice:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.panel-field {
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+.panel-field:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.panel-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.panel-list-item {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  text-align: left;
+}
+
+@media (max-width: 599px) {
+  .panel-card {
+    transform: translate(-50%, -50%);
+    padding: var(--space-4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel-card {
+    animation: none;
+  }
+}
