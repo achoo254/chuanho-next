@@ -20,7 +20,14 @@ interface RoomCenserProps {
   readonly label: string;
 }
 
-/** x of the i-th of n sticks, spread over the bowl's opening. */
+/** The three sticks of one offering: sideways offset, lean in degrees and height relative to the middle one. */
+const TRIO = [
+  { dx: -4, tilt: -7, scale: 0.94 },
+  { dx: 0, tilt: 0, scale: 1 },
+  { dx: 4, tilt: 7, scale: 0.94 },
+] as const;
+
+/** x of the i-th of n offerings, spread over the bowl's opening. */
 const stickX = (index: number, count: number): number => (count <= 1 ? 100 : LEFT + ((RIGHT - LEFT) * index) / (count - 1));
 
 export function RoomCenser({ members, smoke, milestone, ashes, label }: RoomCenserProps): ReactNode {
@@ -51,14 +58,24 @@ export function RoomCenser({ members, smoke, milestone, ashes, label }: RoomCens
         const top = SAND_Y - height;
         return (
           <g key={member.id}>
-            <rect x={x - 1.5} y={top} width="3" height={height} rx="1" fill="var(--c-incense-body)" />
-            {!stick.burntOut && (
-              <>
-                <circle className="room-ember-glow" cx={x} cy={top} r="5" fill="var(--c-ember-glow)" />
-                <circle cx={x} cy={top} r="2.2" fill="var(--c-ember)" />
-                {member.isMe && <circle cx={x} cy={top} r="7.5" fill="none" stroke="var(--c-primary)" strokeWidth="1.2" />}
-              </>
-            )}
+            {/* Each offering is three sticks side by side, fanned a little, the middle one tallest. */}
+            {TRIO.map((offset) => {
+              const stickHeight = height * offset.scale;
+              const stickTop = SAND_Y - stickHeight;
+              const stickX0 = x + offset.dx;
+              return (
+                <g key={offset.dx} transform={`rotate(${offset.tilt} ${stickX0} ${SAND_Y})`}>
+                  <rect x={stickX0 - 1.2} y={stickTop} width="2.4" height={stickHeight} rx="1" fill="var(--c-incense-body)" />
+                  {!stick.burntOut && (
+                    <>
+                      <circle className="room-ember-glow" cx={stickX0} cy={stickTop} r="4" fill="var(--c-ember-glow)" />
+                      <circle cx={stickX0} cy={stickTop} r="1.8" fill="var(--c-ember)" />
+                    </>
+                  )}
+                </g>
+              );
+            })}
+            {!stick.burntOut && member.isMe && <circle cx={x} cy={top} r="9" fill="none" stroke="var(--c-primary)" strokeWidth="1.2" />}
           </g>
         );
       })}
