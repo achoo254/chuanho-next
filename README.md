@@ -10,9 +10,7 @@ Cam kết: không quảng cáo, không xin tiền, không bán đổi vận, kh�
 **Trạng thái:** chơi được vòng cốt lõi ở chế độ khách: thắp hương (giữ ngón tay), Mõ Beat (nốt rơi theo nhạc lofi tổng
 hợp bằng WebAudio, 3 độ khó, PERFECT ±60 ms, GOOD ±120 ms), Mõ vô cực (gõ tự do, gõ tự động, skin mõ), Tụng kinh (chữ
 sáng theo từng tiếng mõ), nhiệm vụ nhỏ trong ngày, thẻ chia sẻ 9:16 và điểm công đức lưu trong máy (một phiên đầy đủ mỗi
-ngày mới cộng điểm, chỉ để trang trí sân). Tab Sổ và Đài đang để "Sắp có". **Server** (`apps/server`) đã có phần lõi:
-đăng nhập bằng tài khoản hoandat.com, đồng bộ tiến trình và sổ khẩu nghiệp hai chiều, xóa toàn bộ dữ liệu, bộ đếm chung
-"Giờ Tĩnh"; giao diện web chưa nối vào các API này. Khách vẫn chơi đầy đủ, không cần server.
+ngày mới cộng điểm, chỉ để trang trí sân). Ngoài vòng chơi cốt lõi còn có: **Sổ khẩu nghiệp** (check-in, "mình đã nhịn", gỡ mây 3 bước), **Dịch sang tiếng hiền** (kho câu tĩnh), **Đài** (chế độ ngủ và làm việc), **Phòng giải nghiệp** (phòng theo mã, hương cháy theo giờ thật), đăng nhập một lần bấm kèm đồng bộ hai chiều và chip **Giờ Tĩnh 22:30**. Tính năng cần server (phòng, đồng bộ, Giờ Tĩnh) chỉ chạy khi `apps/server` được deploy; chưa có server thì app coi người chơi là khách. Chưa làm: xin xăm, tiểu sa di Tiểu Đệ, phần sản xuất trên PC của Đài. Khách vẫn chơi đầy đủ, không cần server.
 
 ## Cấu trúc
 
@@ -34,6 +32,9 @@ ngày mới cộng điểm, chỉ để trang trí sân). Tab Sổ và Đài đa
 | [`apps/web/src/character`](apps/web/src/character) | Bản 3D: nhân vật dựng bằng code (đầu, thân, tay, chân trên các nút khớp, decal mặt và má), dùi và xâu hạt trong tay, hoạt ảnh gõ mõ theo bảng khóa thời gian; các hàm thuần có test (tầm với của tay, mốc thời gian cú gõ, tư thế, thở và chớp mắt) |
 | [`apps/web/src/modes`](apps/web/src/modes) | Bản 3D: các chế độ chơi trong cảnh (thắp hương, Mõ Beat, tụng kinh, Mõ vô cực, kết phiên), sân khấu nối React với cảnh (mõ trên đài sen, miệng mõ, skin, nén hương, nốt cầu sáng, bụi và khói), định tuyến từ vật sang chế độ |
 | [`apps/web/src/share3d`](apps/web/src/share3d) | Bản 3D: chụp cảnh 1080 × 1920 bằng camera riêng rồi đè chữ, chỉ số bằng các bước vẽ dùng chung với thẻ 2D |
+| [`apps/web/src/features`](apps/web/src/features) | Các màn HTML cắm vào sân qua [`panel-registry.tsx`](apps/web/src/features/panel-registry.tsx): `journal`, `gentle`, `radio`, `room` (và `fortune` đang để "sắp có"). Thêm màn mới = một dòng ở registry + vài dòng ở `world-actions`, `play-mode-routing`, icon và tên; mỗi màn tự mang chữ vi/en (`createFeatureText`) và CSS riêng |
+| [`apps/web/src/account`](apps/web/src/account), [`sync`](apps/web/src/sync), [`quiet-hour`](apps/web/src/quiet-hour) | Đăng nhập, đồng bộ (`SyncedCollection`: thêm loại dữ liệu mới bằng một đăng ký; dữ liệu trên máy có chủ, không đẩy sang tài khoản khác) và Giờ Tĩnh |
+| [`packages/contract`](packages/contract) | `@chuanho/contract`: kiểu, bộ kiểm tra và hàm gộp thuần dùng chung giữa web và server (đồng bộ, sổ, phòng, bộ lọc lời nguyện, Giờ Tĩnh) |
 | [`apps/web/src/hud`](apps/web/src/hud) | HUD biểu tượng đè lên canvas, màn nạp, nút Bắt đầu, bảng "i" (giới thiệu và cam kết) |
 | [`apps/web/src/fallback`](apps/web/src/fallback) | Ảnh tĩnh và thông báo ngắn cho máy không có WebGL2 |
 | [`apps/web/public/models`](apps/web/public/models) | Mô hình GLB do AI sinh (mõ, dùi, bát, chuông, cột son), nguồn ở `CREDITS.md` |
