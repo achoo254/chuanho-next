@@ -1,5 +1,6 @@
 /** Everything web and server agree on. Import from `@chuanho/contract`; the web side takes types and pure helpers only. */
 export * from './journal';
+export * from './library';
 export * from './primitives';
 export * from './progress';
 export * from './quiet-hour';

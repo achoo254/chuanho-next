@@ -1,5 +1,5 @@
 import type { KarmaKind, ProgressDoc } from '@chuanho/contract';
-import { bigint, boolean, index, integer, jsonb, pgSequence, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { bigint, boolean, doublePrecision, index, integer, jsonb, pgSequence, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -89,4 +89,38 @@ export const quietHourPeople = pgTable(
     count: integer('count').notNull(),
   },
   (table) => [primaryKey({ columns: [table.day, table.userId] }), index('quiet_hour_people_user_id_idx').on(table.userId)],
+);
+
+/**
+ * The shared music library: one row per track, by the id the factory gave it. Removed tracks stay (soft removal) so a
+ * re-ingest does not bring them back and the operator can list the files to delete; `listens` survives every ingest.
+ */
+export const libraryTracks = pgTable('library_tracks', {
+  id: text('id').primaryKey(),
+  file: text('file').notNull(),
+  duration: doublePrecision('duration').notNull(),
+  tags: jsonb('tags').$type<string[]>().notNull(),
+  bpm: doublePrecision('bpm'),
+  playableBeatmap: boolean('playable_beatmap'),
+  addedAt: timestamp('added_at', { withTimezone: true }).notNull(),
+  listens: integer('listens').notNull().default(0),
+  removed: boolean('removed').notNull().default(false),
+  removedAt: timestamp('removed_at', { withTimezone: true }),
+  removedReason: text('removed_reason'),
+});
+
+/**
+ * Who has been counted for a track on a Vietnam day: `client_hash` is an HMAC of the day, IP and user agent under a
+ * server-side key, never the raw values, and changes every day. Only today's rows matter; older ones are pruned.
+ */
+export const libraryListens = pgTable(
+  'library_listens',
+  {
+    trackId: text('track_id')
+      .notNull()
+      .references(() => libraryTracks.id, { onDelete: 'cascade' }),
+    day: text('day').notNull(),
+    clientHash: text('client_hash').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.trackId, table.day, table.clientHash] }), index('library_listens_day_idx').on(table.day)],
 );

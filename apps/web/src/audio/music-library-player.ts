@@ -12,10 +12,12 @@
  *   the bundled pad loop until the music is next requested.
  * - The radio steers the session (music-session.ts): skip, pause, preferred tags; a pause holds even when the
  *   context resumes, and picks keep the no-repeat promise whatever is preferred.
+ * - Each track heard long enough is reported once per session to the library's listen count (music-listen-report.ts).
  * Screens ask for music through background-music.ts, which shares one session between them.
  */
 import { type BackingTrack, startBackingTrack } from './backing-track';
 import { type MusicDeck, fadeDeck as fade } from './music-decks';
+import { createListenReporter } from './music-listen-report';
 import { MUSIC_BASE, type MusicTrack, loadMusicManifest } from './music-manifest';
 import { MIN_REPEAT_GAP_S, pickNextTrack } from './music-play-history';
 import type { Session } from './music-session';
@@ -49,6 +51,9 @@ export function startLibrarySession(ctx: AudioContext, decks: readonly [MusicDec
   let switchedAt = -Infinity;
   let tracksStarted = 0;
   let listenedS = 0;
+  /** Seconds of the current track heard (seeks and stalls excluded), for the listen report. */
+  let trackHeardS = 0;
+  const listenReports = createListenReporter();
   const timers = createTimerSet();
   const later = timers.later;
   const pick = (): MusicTrack | null =>
@@ -90,6 +95,7 @@ export function startLibrarySession(ctx: AudioContext, decks: readonly [MusicDec
     currentTrack = track;
     handedOver = false;
     lastTime = 0;
+    trackHeardS = 0;
     deck.element.currentTime = 0;
     tracksStarted += 1;
     switchedAt = performance.now();
@@ -135,6 +141,8 @@ export function startLibrarySession(ctx: AudioContext, decks: readonly [MusicDec
         failures = 0;
         listenedS += delta;
         history.listened(delta);
+        trackHeardS += delta;
+        if (currentTrack) listenReports.heard(currentTrack, trackHeardS);
       }
       if (!handedOver && Number.isFinite(element.duration) && element.duration - element.currentTime <= CROSSFADE_S) {
         handedOver = true;

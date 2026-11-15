@@ -100,6 +100,12 @@ curl -s -o /dev/null -w '%{http_code} %{content_type}\n' -r 0-1023 https://chuan
 rồi beatmap, rồi `index.json`, `manifest.json` sau cùng). Nginx trả beatmap với `Cache-Control: no-cache` (tên file giữ nguyên khi
 sinh lại). Thiếu beatmap thì Mõ Beat chơi nhịp lofi tổng hợp như trước.
 
+**Sản xuất hằng đêm trên PC** do [`tools/chuanho-factory`](../tools/chuanho-factory/README.md) lo: hàng đợi sinh thêm
+nhạc (gọi `tools/chuanho-music`), beatmap, tranh nền, giọng bài kệ và video cho Tiểu Đệ, chạy trong khung giờ cho phép
+và nhường GPU khi phiên khác đang dùng. Việc `publish-library` dựng gói `media/publish/library` (chỉ bản đạt kiểm tra,
+bỏ các bản đã gỡ bằng `reject`) và in đúng lệnh `upload-music.sh` để người vận hành chạy (có `PRUNE=1` khi có bản bị
+gỡ); nhà máy không tự tải lên. Trạng thái và file sinh ra nằm ngoài git (`CHUANHO_FACTORY_HOME`).
+
 Thiếu thư viện (máy chủ mới, mất mạng, chạy `pnpm dev`) thì game tự phát vòng nhạc `pad-loop.mp3` có sẵn trong bản phát
 hành. Build có thể trỏ nơi khác bằng `VITE_MUSIC_BASE` (kết thúc bằng `/`).
 
@@ -127,6 +133,51 @@ với migration ở `/var/www/chuanho/server/drizzle` (cùng vị trí tương �
 Giới hạn: đăng nhập 100 lần bắt đầu mỗi 15 phút mỗi IP; đồng bộ 120 lần mỗi 15 phút và lô nhịp 150 lần mỗi 5 phút, tính
 theo phiên. Body đồng bộ tối đa 2 MB (nginx `client_max_body_size 2m` ở khối API). Log không ghi body, ghi chú trong sổ
 hay tham số truy vấn (`apps/server/src/log-error.ts`, có test).
+
+### Kho nhạc (`/api/library`)
+
+Server giữ metadata của thư viện nhạc nền (độ dài, tag buổi, ngày thêm, lượt nghe, đã gỡ hay chưa) trong bảng
+`library_tracks` và `library_listens`; file MP3 vẫn nằm ở `/var/www/chuanho/media/music/` (thuộc root, server không ghi
+được nên API không bao giờ xoá file). Hợp đồng ở [`packages/contract/src/library.ts`](../packages/contract/src/library.ts),
+mã ở [`apps/server/src/library`](../apps/server/src/library).
+
+| Route | Ai gọi | Việc |
+|---|---|---|
+| `GET /api/library/manifest` | web, app khác | Manifest các bản còn trong kho, cùng dạng `manifest.json` tĩnh, `Cache-Control: no-cache` |
+| `GET /api/library/tracks` | ai cũng được | Mọi bản kèm `addedAt`, `listens`, `removed`, `bpm`, `playableBeatmap` |
+| `POST /api/library/listen` | web, không cần đăng nhập | `{ trackId }`: mỗi người nghe (băm HMAC của ngày, IP, user agent; không lưu IP) tính một lượt mỗi bản mỗi ngày; 120 lần mỗi 15 phút mỗi IP, 600 lần mỗi phút cả server |
+| `POST /api/library/ingest` | công cụ của người vận hành | Đăng ký hoặc làm mới bản theo id (giữ lượt nghe, gộp tag, bản đã gỡ vẫn gỡ); vượt `LIBRARY_MAX_TRACKS` (400) thì gỡ bản ít nghe và cũ nhất ngoài lô vừa gửi, trả về trong `pruned` |
+| `POST /api/library/tracks/<id>/remove` | người vận hành | "Gỡ bản": `{ reason }`, gỡ mềm, gọi lại không đổi gì |
+| `POST /api/library/tracks/<id>/restore` | người vận hành | Đưa bản đã gỡ trở lại (chỉ khi file còn trên đĩa); kho đầy thì `409` |
+| `GET /api/library/removed` | người vận hành | Id và tên file các bản đã gỡ, để xoá file trên đĩa |
+
+Web đọc `/api/library/manifest` trước, lỗi, không phải JSON hoặc rỗng thì dùng `/media/music/manifest.json` tĩnh như
+cũ. Mỗi bản nghe đủ 30 giây (hoặc nửa bản nếu ngắn hơn) được báo một lượt mỗi phiên nghe, chỉ gửi id bản nhạc.
+
+Route của người vận hành cần `Authorization: Bearer <LIBRARY_ADMIN_TOKEN>`; chưa đặt biến này thì chúng trả `404` như
+route không tồn tại. Các POST đi qua kiểm same-origin chung của server nên phải gửi kèm `Origin: <PUBLIC_URL>`. Người vận
+hành tự thêm `LIBRARY_ADMIN_TOKEN` (≥ 32 ký tự, giữ ở thư mục env trên iCloud) và nếu muốn `LIBRARY_LISTEN_SALT` (≥ 32
+ký tự; không đặt thì suy ra từ `AUTH_CLIENT_SECRET`) vào `/etc/chuanho/production.env`, rồi restart `chuanho-server`.
+
+Quy trình sau mỗi lần nhà máy trên PC xuất bản nhạc:
+
+```sh
+# 1. Gửi file và manifest tĩnh như trước
+SSH_TARGET=<alias> SSH_OPTS="-F <ssh_config>" bash infra/upload-music.sh <thư mục thư viện>
+# 2. Đăng ký vào kho (body là manifest, mỗi bản có thể thêm bpm, playableBeatmap)
+curl -fsS -X POST https://chuanho.hoandat.com/api/library/ingest \
+  -H "Origin: https://chuanho.hoandat.com" -H "Authorization: Bearer $LIBRARY_ADMIN_TOKEN" \
+  -H 'Content-Type: application/json' --data-binary @<thư mục thư viện>/manifest.json
+# 3. Gỡ một bản nghe khó chịu
+curl -fsS -X POST https://chuanho.hoandat.com/api/library/tracks/<id>/remove \
+  -H "Origin: https://chuanho.hoandat.com" -H "Authorization: Bearer $LIBRARY_ADMIN_TOKEN" \
+  -H 'Content-Type: application/json' -d '{"reason":"<lý do>"}'
+# 4. Lấy danh sách file đã gỡ rồi xoá trên máy chủ bằng root
+curl -fsS https://chuanho.hoandat.com/api/library/removed -H "Authorization: Bearer $LIBRARY_ADMIN_TOKEN"
+```
+
+Bản đã gỡ biến khỏi manifest API ngay; manifest tĩnh vẫn liệt kê nó cho tới lần `upload-music.sh` sau (bỏ bản đó khỏi
+manifest trên PC, `PRUNE=1` để xoá file). Sau khi xoá file thì đừng `restore` bản đó.
 
 ### Biến môi trường
 

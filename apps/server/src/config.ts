@@ -1,3 +1,5 @@
+import { createHmac, randomBytes } from 'node:crypto';
+import { LIBRARY_LISTEN_LIMIT_GLOBAL_PER_MIN, LIBRARY_LISTEN_LIMIT_PER_IP_15MIN } from '@chuanho/contract';
 import { z } from 'zod';
 
 const LOOPBACK_HOSTS = ['127.0.0.1', 'localhost', '[::1]'];
@@ -19,6 +21,10 @@ const Env = z.object({
   AUTH_CLIENT_ID: z.preprocess(emptyIsUnset, z.string().min(1).default(DEFAULT_CLIENT_ID)),
   /** Secret of the confidential client. Unset: sign-in is off (guests still play; their progress stays on the device). */
   AUTH_CLIENT_SECRET: z.preprocess(emptyIsUnset, z.string().min(32).optional()),
+  /** Bearer token of the music library's operator routes (ingest, remove, restore). Unset: those routes answer 404. */
+  LIBRARY_ADMIN_TOKEN: z.preprocess(emptyIsUnset, z.string().min(32).optional()),
+  /** Key of the anonymous listener hash. Unset: derived from AUTH_CLIENT_SECRET, or random per process without it. */
+  LIBRARY_LISTEN_SALT: z.preprocess(emptyIsUnset, z.string().min(32).optional()),
 });
 
 export interface AuthConfig {
@@ -26,6 +32,15 @@ export interface AuthConfig {
   clientId: string;
   clientSecret: string;
   redirectUri: string;
+}
+
+export interface LibraryConfig {
+  /** Operator token of the library's admin routes; null turns them off (404). */
+  adminToken: string | null;
+  /** HMAC key of the listener hash: a listen is deduplicated by hash(day, IP, user agent), never by the raw values. */
+  listenSalt: string;
+  listenLimitPerIp15Min: number;
+  listenLimitGlobalPerMin: number;
 }
 
 export interface ServerConfig {
@@ -47,6 +62,17 @@ export interface ServerConfig {
   syncLimitPer15Min: number;
   /** Quiet-hour batches per 5 minutes per session (one batch every few seconds while the half hour is on). */
   beatsLimitPer5Min: number;
+  library: LibraryConfig;
+}
+
+/**
+ * The listener-hash key: the configured salt, else one derived from the client secret (stable across restarts without
+ * a new env var), else a random one per process (dev: listens may count again after a restart, which is harmless).
+ */
+function listenSalt(salt: string | undefined, clientSecret: string | undefined): string {
+  if (salt) return salt;
+  if (clientSecret) return createHmac('sha256', clientSecret).update('library-listen-salt').digest('hex');
+  return randomBytes(32).toString('hex');
 }
 
 /** Validates env once at startup; throws naming the offending keys so the process fails fast. */
@@ -90,5 +116,11 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     signInLimitPer15Min: 100,
     syncLimitPer15Min: 120,
     beatsLimitPer5Min: 150,
+    library: {
+      adminToken: e.LIBRARY_ADMIN_TOKEN ?? null,
+      listenSalt: listenSalt(e.LIBRARY_LISTEN_SALT, e.AUTH_CLIENT_SECRET),
+      listenLimitPerIp15Min: LIBRARY_LISTEN_LIMIT_PER_IP_15MIN,
+      listenLimitGlobalPerMin: LIBRARY_LISTEN_LIMIT_GLOBAL_PER_MIN,
+    },
   };
 }

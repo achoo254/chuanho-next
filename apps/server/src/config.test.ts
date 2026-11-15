@@ -41,6 +41,23 @@ describe('server config', () => {
     expect(() => loadConfig({ AUTH_CLIENT_SECRET: SECRET, NODE_TLS_REJECT_UNAUTHORIZED: '0' })).toThrow(/TLS/);
   });
 
+  it('keeps the library admin routes off without a token and refuses a short one', () => {
+    expect(loadConfig({}).library.adminToken).toBeNull();
+    expect(loadConfig({ LIBRARY_ADMIN_TOKEN: '' }).library.adminToken).toBeNull();
+    expect(loadConfig({ LIBRARY_ADMIN_TOKEN: SECRET }).library.adminToken).toBe(SECRET);
+    expect(() => loadConfig({ LIBRARY_ADMIN_TOKEN: 'short' })).toThrow(/LIBRARY_ADMIN_TOKEN/);
+  });
+
+  it('takes the listen salt from env, else derives a stable one from the client secret', () => {
+    const salt = 'l'.repeat(40);
+    expect(loadConfig({ LIBRARY_LISTEN_SALT: salt }).library.listenSalt).toBe(salt);
+    const derived = loadConfig({ AUTH_CLIENT_SECRET: SECRET }).library.listenSalt;
+    expect(derived).toBe(loadConfig({ AUTH_CLIENT_SECRET: SECRET }).library.listenSalt);
+    expect(derived).not.toContain(SECRET);
+    expect(loadConfig({}).library.listenSalt).toMatch(/^[0-9a-f]{64}$/);
+    expect(() => loadConfig({ LIBRARY_LISTEN_SALT: 'short' })).toThrow(/LIBRARY_LISTEN_SALT/);
+  });
+
   it('never puts the client secret in an error', () => {
     const secret = 'short-secret';
     try {

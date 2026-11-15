@@ -15,6 +15,13 @@
       "when": 1794737030564,
       "tag": "0001_data-epoch",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794746627861,
+      "tag": "0002_library",
+      "breakpoints": true
     }
   ]
 }

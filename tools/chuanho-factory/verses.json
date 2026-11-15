@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "note": "Short calm lines read aloud over the scene videos. Written by Claude, checked by verses.ts (pnpm exec tsx tools/chuanho-factory/cli.ts verses). Not sutra text, no religious claims, no promises of luck, numbers written as words.",
+  "verses": [
+    { "id": "tho-cham", "time": "any", "text": "Thở vào thật chậm, thở ra thật nhẹ." },
+    { "id": "suong-som", "time": "morning", "text": "Sương sớm trên lá, nhẹ như hơi thở." },
+    { "id": "chuong-xa", "time": "morning", "text": "Một tiếng chuông xa, một hơi thở gần." },
+    { "id": "tung-viec", "time": "morning", "text": "Việc hôm nay, mình làm từng việc một." },
+    { "id": "nang-trua", "time": "noon", "text": "Nắng trưa đứng bóng, nghỉ tay một lúc." },
+    { "id": "chen-tra", "time": "noon", "text": "Chén trà còn ấm, buổi chiều còn dài." },
+    { "id": "la-roi", "time": "noon", "text": "Lá rơi không vội, mình cũng không vội." },
+    { "id": "den-long", "time": "evening", "text": "Đèn lồng đã thắp, ngày cũ khép lại." },
+    { "id": "gio-san", "time": "evening", "text": "Gió qua sân chùa, lòng cũng lặng theo." },
+    { "id": "loi-diu", "time": "evening", "text": "Nói lời dịu dàng, nghe lòng mình êm." },
+    { "id": "trang-len", "time": "night", "text": "Trăng lên đầu ngõ, ta nói khẽ thôi." },
+    { "id": "ngoi-yen", "time": "night", "text": "Ngồi yên một chút, để lòng nghỉ ngơi." }
+  ]
+}
