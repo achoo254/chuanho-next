@@ -20,7 +20,7 @@ const MoEndlessScreen = lazy(() => import('./screens/mo-endless-screen').then((m
 const TungKinhScreen = lazy(() => import('./screens/tung-kinh-screen').then((m) => ({ default: m.TungKinhScreen })));
 const SessionEndScreen = lazy(() => import('./screens/session-end-screen').then((m) => ({ default: m.SessionEndScreen })));
 const ShareCardScreen = lazy(() => import('./share/share-card-screen').then((m) => ({ default: m.ShareCardScreen })));
-// The 3D game and Babylon.js load only when the address asks for them (`?v=3d` or `#3d`); the 2D page stays as it was.
+// The 3D game is the default; Babylon.js loads with it. `?v=2d` still opens the old 2D page.
 const Game3dShell = lazy(() => import('./engine/game-3d-shell').then((m) => ({ default: m.Game3dShell })));
 
 function SiteHeader(): ReactNode {
@@ -149,7 +149,7 @@ function Classic2dApp(): ReactNode {
   );
 }
 
-/** The 3D game when the address opts in, the 2D page otherwise. Decided once per page load. */
+/** The 3D game unless the address asks for the old 2D page. Decided once per page load. */
 export function App(): ReactNode {
   const [game3d] = useState(() => isGame3dRequested(window.location.search, window.location.hash));
   if (!game3d) return <Classic2dApp />;

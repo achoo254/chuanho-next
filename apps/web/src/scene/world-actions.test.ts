@@ -42,13 +42,12 @@ describe('commandForKey', () => {
 });
 
 describe('isGame3dRequested', () => {
-  it('opts in with ?v=3d or #3d only', () => {
+  it('is the default; only ?v=2d or #2d pick the old page', () => {
+    expect(isGame3dRequested('', '')).toBe(true);
     expect(isGame3dRequested('?v=3d', '')).toBe(true);
-    expect(isGame3dRequested('?lang=en&v=3d', '')).toBe(true);
-    expect(isGame3dRequested('', '#3d')).toBe(true);
-    expect(isGame3dRequested('', '#3D')).toBe(true);
-    expect(isGame3dRequested('', '')).toBe(false);
-    expect(isGame3dRequested('?v=2d', '#main')).toBe(false);
+    expect(isGame3dRequested('?lang=en', '#main')).toBe(true);
+    expect(isGame3dRequested('?v=2d', '')).toBe(false);
+    expect(isGame3dRequested('', '#2D')).toBe(false);
   });
 
   it('forces WebGL2 only when asked', () => {

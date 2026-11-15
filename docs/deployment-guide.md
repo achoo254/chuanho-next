@@ -23,18 +23,14 @@ có `'unsafe-inline'`), ảnh từ chính trang và `data:`/`blob:` (thẻ chia 
 chính trang và `blob:` (nhạc nền tổng hợp ngay trong trình duyệt), và tín hiệu Cloudflare Web Analytics. Cảm biến nghiêng
 (`accelerometer`, `gyroscope`) được cấp cho chính trang để làm hiệu ứng chiều sâu; camera, micro, vị trí bị chặn.
 
-**Bản 3D (`?v=3d`) và CSP.** Babylon.js không nạp gì từ CDN: mọi bộ giải nén nằm ở `/decoders/babylon/` trong bản phát
-hành (meshopt, KTX2 và zstd, chép từ Babylon 9.36; Draco và glslang không host nên nếu có mã nào cần thì lỗi 404 ngay trên
-trang, không gọi ra ngoài). Khối hình học tạm hiện tại không cần WebAssembly, nên CSP hiện có vẫn chạy được bản 3D. Khi
-mô hình GLB nén meshopt hoặc texture KTX2 lên prod, CSP phải thêm, rồi kiểm lại trên trang thật:
+**Bản 3D (mặc định) và CSP.** Babylon.js không nạp gì từ CDN: mọi bộ giải nén nằm ở `/decoders/babylon/` trong bản phát
+hành (meshopt, KTX2 và zstd, chép từ Babylon 9.36; Draco và glslang không host). Mô hình GLB nén meshopt cần
+WebAssembly, nên CSP trong nginx có `'wasm-unsafe-eval'` ở `script-src` và `worker-src 'self' blob:`. Game hiện dùng
+texture WebP, không dùng KTX2; nếu sau này đổi sang KTX2, kiểm bộ chuyển mã Basis (mã Emscripten dùng `new Function`)
+trên trang thật và dùng UASTC thay vì mở `'unsafe-eval'`. Đổi CSP là đổi file nginx: chép lên `.65`, `nginx -t`,
+reload (CI không đổi được nginx).
 
-- `'wasm-unsafe-eval'` trong `script-src` (bộ giải nén biên dịch WebAssembly);
-- `worker-src 'self' blob:` (bộ giải KTX2 chạy trong worker tạo từ blob);
-- kiểm thêm bộ chuyển mã Basis (`msc_basis_transcoder.js`): mã Emscripten này có chỗ dùng `new Function`, nếu trình duyệt
-  báo vi phạm CSP thì dùng texture UASTC hoặc WebP thay ETC1S, đừng mở `'unsafe-eval'`.
-
-Nginx cũng nên khai báo kiểu `application/wasm` cho `.wasm` và `model/gltf-binary` cho `.glb`, và cho `/models/` cùng
-`/decoders/` cache một ngày như `/art/`. Lưu ý: file `/models/<tên>.glb` chưa có thì `location /` trả về `index.html`
+Nginx khai báo kiểu `application/wasm`, `model/gltf-binary` và cache một ngày cho `/models/` và `/decoders/`. Lưu ý: file `/models/<tên>.glb` chưa có thì `location /` trả về `index.html`
 (mã 200); game nhận ra điều đó qua bốn byte đầu (`glTF`) và dùng khối tạm.
 
 ## Lần đầu

@@ -51,11 +51,10 @@ pnpm lint         # eslint + check:brand + check:tokens
 pnpm test         # vitest, tối đa 2 worker
 ```
 
-## Bản 3D (chưa là mặc định)
+## Bản 3D (mặc định)
 
-Trang mặc định vẫn là bản 2D. Bản 3D (Babylon.js, canvas phủ toàn cửa sổ, HUD biểu tượng, thế giới là menu) chỉ bật khi
-địa chỉ có `?v=3d` (hoặc `#3d`), ví dụ `http://localhost:5331/?v=3d`. Babylon nằm trong các gói tách riêng, chỉ tải khi
-bật bản 3D, nên gói đầu của bản 2D gần như không đổi.
+Trang mặc định là bản 3D (Babylon.js, WebGPU rồi WebGL2, canvas phủ toàn cửa sổ, HUD biểu tượng, thế giới là menu).
+Trang 2D cũ vẫn mở được bằng `?v=2d` (hoặc `#2d`) trong lúc chờ gỡ hẳn. Babylon nằm trong các gói tách riêng.
 
 | Tham số thêm | Tác dụng |
 |---|---|

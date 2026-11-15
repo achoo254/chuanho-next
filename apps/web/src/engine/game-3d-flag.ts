@@ -1,12 +1,12 @@
 /**
- * Which experience the page shows. The 3D game is opt-in while it is being built: production keeps the 2D yard
- * unless the address asks for 3D with `?v=3d` (or the hash `#3d`, handy where a query string gets stripped).
+ * Which experience the page shows. The 3D game is the default; the old 2D yard stays reachable with `?v=2d`
+ * (or the hash `#2d`) as an escape hatch until it is removed.
  */
 
-/** True when the address opts into the 3D game. */
+/** True unless the address explicitly asks for the old 2D page. */
 export function isGame3dRequested(search: string, hash: string): boolean {
-  if (new URLSearchParams(search).get('v') === '3d') return true;
-  return hash.replace(/^#/, '').toLowerCase() === '3d';
+  if (new URLSearchParams(search).get('v') === '2d') return false;
+  return hash.replace(/^#/, '').toLowerCase() !== '2d';
 }
 
 /** The render backend to try first; `?renderer=webgl2` forces WebGL2 for comparing the two on one device. */
