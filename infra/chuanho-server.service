@@ -1,0 +1,28 @@
+# .65: /etc/systemd/system/chuanho-server.service. The API on loopback :5330 behind nginx (/api/, /auth/, /healthz).
+# The release puts the bundle and the migrations side by side: /var/www/chuanho/server/{dist/server/index.mjs,drizzle/}
+# (the bundle finds the migrations two levels up, as apps/server does in the repo).
+[Unit]
+Description=Chua Nho API (chuanho.hoandat.com)
+After=network-online.target postgresql.service
+Wants=network-online.target postgresql.service
+
+[Service]
+User=chuanho
+Group=chuanho
+# NODE_ENV=production, PORT=5330, PUBLIC_URL, DATABASE_URL, AUTH_ISSUER, AUTH_CLIENT_ID, AUTH_CLIENT_SECRET:
+# written on the server from the env folder outside git (docs/deployment-guide.md), never in the repo.
+EnvironmentFile=/etc/chuanho/production.env
+WorkingDirectory=/var/www/chuanho/server
+ExecStart=/opt/node22/bin/node --enable-source-maps /var/www/chuanho/server/dist/server/index.mjs
+Restart=on-failure
+RestartSec=3
+# .65 has 8 GB shared by every app; the API is small (the game runs in the browser), so cap it.
+MemoryHigh=160M
+MemoryMax=256M
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

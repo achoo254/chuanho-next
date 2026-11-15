@@ -9,8 +9,9 @@ Runbook deploy của repo này. Quy tắc chung của hệ sinh thái (tên, IdP
 | Phần | Ở đâu |
 |---|---|
 | Web (React + Vite, tĩnh) | `/var/www/chuanho/dist`, nginx phục vụ trực tiếp |
-| Server API, database | Chưa có ở bản hiện tại (khách chơi hoàn toàn trên trình duyệt, tiến trình lưu trong máy) |
-| Đường vào | Cloudflare (proxied, SSL "full") → nginx `conf.d/chuanho.hoandat.com.conf` → file tĩnh |
+| Server API (Node, Express 5, một file bundle) | systemd `chuanho-server`, loopback `127.0.0.1:5330`, Node 22 ở `/opt/node22`; **chưa cài lên `.65`** (mục Server API) |
+| Database | Postgres đang chạy trên `.65`, database `chuanho`, role `chuanho`; migration chạy khi server khởi động |
+| Đường vào | Cloudflare (proxied, SSL "full") → nginx `conf.d/chuanho.hoandat.com.conf` → file tĩnh; `/api/`, `/auth/`, `/healthz` → server |
 | Ảnh và âm thanh | `/art/…` và `/audio/…` nằm trong bản phát hành, cache một ngày |
 | Thư viện nhạc nền | `/var/www/chuanho/media/music/` (ngoài `dist/`, deploy không đụng tới), phục vụ ở `/media/music/` |
 
@@ -97,6 +98,74 @@ curl -s -o /dev/null -w '%{http_code} %{content_type}\n' -r 0-1023 https://chuan
 Thiếu thư viện (máy chủ mới, mất mạng, chạy `pnpm dev`) thì game tự phát vòng nhạc `pad-loop.mp3` có sẵn trong bản phát
 hành. Build có thể trỏ nơi khác bằng `VITE_MUSIC_BASE` (kết thúc bằng `/`).
 
+## Server API
+
+Mã ở [`apps/server`](../apps/server), hợp đồng dữ liệu ở [`packages/contract`](../packages/contract). Khách không cần
+server; server chỉ giữ dữ liệu của người đã đăng nhập. `pnpm build` tạo `apps/server/dist/server/index.mjs` (mọi thư
+viện đã gộp, chỉ cần Node) và migration nằm ở `apps/server/drizzle`. Unit:
+[`infra/chuanho-server.service`](../infra/chuanho-server.service) chạy bundle từ `/var/www/chuanho/server/dist/server/`
+với migration ở `/var/www/chuanho/server/drizzle` (cùng vị trí tương đối như trong repo). `infra/deploy.sh` và CI hiện
+chỉ đẩy `apps/web/dist`: phải thêm bước đẩy server trước khi bật API trên `.65`.
+
+| Route | Ai gọi | Việc |
+|---|---|---|
+| `GET /auth/login`, `GET /auth/callback`, `POST /auth/logout` | trình duyệt | Đăng nhập Code + PKCE với auth-next (scope `openid profile`), phiên riêng của app (cookie `__Host-chuanho_session`) |
+| `GET /api/me` | web | `{ id, name }` (tên ngắn, không bao giờ là email) hoặc `401` |
+| `POST /api/sync` | web, đã đăng nhập | Gộp tiến trình và sổ khẩu nghiệp hai chiều theo con trỏ `server_seq` |
+| `DELETE /api/me/data` | web, đã đăng nhập | Xóa hẳn tiến trình, toàn bộ sổ và số nhịp Giờ Tĩnh của người đó; tài khoản và phiên giữ nguyên |
+| `GET /api/quiet-hour` | ai cũng được | Trạng thái Giờ Tĩnh (22:30–23:00 giờ Việt Nam), tổng nhịp và mốc của ngày |
+| `POST /api/quiet-hour/beats` | web, đã đăng nhập | Lô nhịp nhỏ; chỉ nhận trong giờ, mỗi người tối đa `QUIET_HOUR_PERSON_CAP` nhịp mỗi đêm |
+| `POST /api/idp/account-deleted` | IdP | Tài khoản bị xóa ở `auth.hoandat.com/account`: kiểm SET ký ES256 bằng JWKS của IdP rồi xóa dòng `users` và mọi thứ cascade theo |
+| `GET /healthz` | nginx, kiểm tra | `ok` khi database trả lời |
+
+Giới hạn: đăng nhập 100 lần bắt đầu mỗi 15 phút mỗi IP; đồng bộ 120 lần mỗi 15 phút và lô nhịp 150 lần mỗi 5 phút, tính
+theo phiên. Body đồng bộ tối đa 2 MB (nginx `client_max_body_size 2m` ở khối API). Log không ghi body, ghi chú trong sổ
+hay tham số truy vấn (`apps/server/src/log-error.ts`, có test).
+
+### Biến môi trường
+
+Mẫu: [`.env.example`](../.env.example). Giá trị thật nằm ở thư mục env trên iCloud (`ENV production/chuanho-next/`),
+không bao giờ trong repo. Trên server là `/etc/chuanho/production.env` (`root:chuanho`, 640).
+
+| Biến | Production |
+|---|---|
+| `NODE_ENV` | `production` (bắt buộc có `DATABASE_URL`, `AUTH_CLIENT_SECRET`, `PUBLIC_URL` https) |
+| `PORT` | `5330` (kiểm còn trống trước khi cài: `ss -ltnp \| grep 5330`) |
+| `PUBLIC_URL` | `https://chuanho.hoandat.com` |
+| `DATABASE_URL` | `postgres://chuanho:<mật khẩu>@127.0.0.1:5432/chuanho` |
+| `AUTH_ISSUER` | `https://auth.hoandat.com` |
+| `AUTH_CLIENT_ID` | `chuanho-web` |
+| `AUTH_CLIENT_SECRET` | secret của client `chuanho-web`, cùng giá trị với `CHUANHO_WEB_CLIENT_SECRET` trên IdP (≥ 32 ký tự) |
+
+### Lần đầu bật server
+
+1. **IdP (repo `auth-next`, làm trước):** thêm `chuanho-web` vào nhóm client chỉ-đăng-nhập
+   (`src/oidc/sign-in-only-clients.ts` cùng kiểu `tuvi-web`: confidential, `client_secret_basic`, Code + PKCE, không
+   refresh token, redirect `https://chuanho.hoandat.com/auth/callback`, post-logout `https://chuanho.hoandat.com/`), cặp
+   biến `CHUANHO_WEB_URL=https://chuanho.hoandat.com` và `CHUANHO_WEB_CLIENT_SECRET`, rồi deploy IdP. Thêm
+   `https://chuanho.hoandat.com/api/idp/account-deleted` vào `ACCOUNT_DELETED_URLS` của IdP (phải đúng từng ký tự với
+   `PUBLIC_URL` + `/api/idp/account-deleted`). Chưa có client này thì đăng nhập báo lỗi, phần còn lại của app vẫn chạy.
+2. **Database** (trên `.65`, hỏi người trước):
+
+   ```sh
+   sudo -u postgres psql -c "CREATE ROLE chuanho LOGIN PASSWORD '<mật khẩu>'"
+   sudo -u postgres createdb -O chuanho chuanho
+   ```
+
+   Thêm dòng `host chuanho chuanho 127.0.0.1/32 scram-sha-256` vào `pg_hba.conf` (cạnh các dòng của sản phẩm khác) rồi
+   `systemctl reload postgresql`. Không tạo instance Postgres mới.
+3. **User và env:** user hệ thống `chuanho` (không shell); ghi `/etc/chuanho/production.env` từ thư mục env trên iCloud
+   qua ssh stdin, không in giá trị ra màn hình.
+4. **Bản server và unit:** đẩy `apps/server/dist` và `apps/server/drizzle` vào `/var/www/chuanho/server/`, cài
+   `infra/chuanho-server.service` vào `/etc/systemd/system/`, `systemctl daemon-reload && systemctl enable --now
+   chuanho-server`, rồi cài lại file nginx (`nginx -t`, reload).
+5. **Kiểm:** `journalctl -u chuanho-server -n 20` có `sign-in: on (chuanho-web …)`; `curl -fsS
+   https://chuanho.hoandat.com/healthz` trả `ok`; `curl -s https://chuanho.hoandat.com/api/quiet-hour` trả JSON;
+   `curl -s -o /dev/null -w '%{http_code}\n' https://chuanho.hoandat.com/api/me` trả `401`.
+
+Quay lui server: `systemctl disable --now chuanho-server` (web tĩnh vẫn chạy, đăng nhập báo lỗi). Log:
+`journalctl -u chuanho-server`.
+
 ## Quay lui
 
 ```sh
@@ -109,4 +178,5 @@ cache các URL đó trên Cloudflare, rồi so mã băm của URL thật (không
 ## Gỡ bỏ
 
 Xoá `/etc/nginx/conf.d/chuanho.hoandat.com.conf` (`nginx -t` rồi reload), xoá `/var/www/chuanho`, user `chuanho-deploy` và
-`/etc/sudoers.d/chuanho-deploy`, xoá bản ghi DNS.
+`/etc/sudoers.d/chuanho-deploy`, xoá bản ghi DNS. Nếu server đã bật: `systemctl disable --now chuanho-server`, xoá unit,
+`/etc/chuanho`, user `chuanho`, database và role `chuanho` (sao lưu trước), client `chuanho-web` trên IdP.

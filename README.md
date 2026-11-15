@@ -10,14 +10,17 @@ Cam kết: không quảng cáo, không xin tiền, không bán đổi vận, kh�
 **Trạng thái:** chơi được vòng cốt lõi ở chế độ khách: thắp hương (giữ ngón tay), Mõ Beat (nốt rơi theo nhạc lofi tổng
 hợp bằng WebAudio, 3 độ khó, PERFECT ±60 ms, GOOD ±120 ms), Mõ vô cực (gõ tự do, gõ tự động, skin mõ), Tụng kinh (chữ
 sáng theo từng tiếng mõ), nhiệm vụ nhỏ trong ngày, thẻ chia sẻ 9:16 và điểm công đức lưu trong máy (một phiên đầy đủ mỗi
-ngày mới cộng điểm, chỉ để trang trí sân). Tab Sổ và Đài đang để "Sắp có". **Chưa có server** (`apps/server` sẽ thêm khi
-làm đăng nhập và đồng bộ), nên dev chỉ chạy web và chưa có proxy `/api`.
+ngày mới cộng điểm, chỉ để trang trí sân). Tab Sổ và Đài đang để "Sắp có". **Server** (`apps/server`) đã có phần lõi:
+đăng nhập bằng tài khoản hoandat.com, đồng bộ tiến trình và sổ khẩu nghiệp hai chiều, xóa toàn bộ dữ liệu, bộ đếm chung
+"Giờ Tĩnh"; giao diện web chưa nối vào các API này. Khách vẫn chơi đầy đủ, không cần server.
 
 ## Cấu trúc
 
 | Thư mục | Vai trò |
 |---|---|
 | [`apps/web`](apps/web) | `@chuanho/web`: React 19 + Vite, giao diện và ngôn ngữ dùng chung từ `@achoo254/app-shell` |
+| [`apps/server`](apps/server) | `@chuanho/server`: API Express 5 + Postgres (drizzle; PGlite khi dev và test), đăng nhập OIDC qua auth-next, đồng bộ, xóa dữ liệu, Giờ Tĩnh. Mỗi tính năng là một module route gắn ở danh sách `ROUTE_MODULES` trong [`app.ts`](apps/server/src/app.ts); migration SQL ở `apps/server/drizzle` |
+| [`packages/contract`](packages/contract) | `@chuanho/contract`: hợp đồng dữ liệu web và server (kiểu, bộ kiểm tra, hàm gộp thuần), không phụ thuộc gói nào |
 | [`apps/web/public/art`](apps/web/public/art) | Ảnh sân chùa, mascot, 4 khung hoạt ảnh gõ mõ, skin mõ (đã nén, webp) |
 | [`apps/web/public/audio`](apps/web/public/audio) | Tiếng mõ (14 take), chuông/chiêng, bát, chuông nhỏ do AI tạo; vòng nhạc dự phòng và nhịp của Mõ Beat |
 | [`apps/web/public/voice/sutra`](apps/web/public/voice/sutra) | Giọng AI đọc kinh (VieNeu-TTS, offline), mỗi dòng một MP3, `manifest.json` ghi độ dài từng dòng |
@@ -46,12 +49,16 @@ Cần Node và pnpm theo `engines`, `packageManager` trong [`package.json`](pack
 
 ```sh
 pnpm install
-pnpm dev          # web tại http://localhost:5331
-pnpm build        # apps/web/dist
+pnpm dev          # web tại http://localhost:5331, API tại 127.0.0.1:5330 (web chuyển /api, /auth sang API)
+pnpm build        # apps/web/dist và bundle server apps/server/dist/server/index.mjs
 pnpm typecheck
-pnpm lint         # eslint + check:brand + check:tokens
-pnpm test         # vitest, tối đa 2 worker
+pnpm lint         # eslint + check:brand + check:tokens + check:gentle
+pnpm test         # vitest, tối đa 2 worker (test server chạy PGlite trong bộ nhớ)
 ```
+
+Server đọc `apps/server/.env` (mẫu ở [`.env.example`](.env.example)). Không có `DATABASE_URL` thì dùng PGlite ở
+`.data/pglite`; không có `AUTH_CLIENT_SECRET` thì đăng nhập tắt, phần còn lại vẫn chạy. Đổi schema trong
+`apps/server/src/db/schema.ts` rồi `pnpm --filter @chuanho/server db:generate` để sinh migration mới.
 
 ## Bản 3D (mặc định)
 
