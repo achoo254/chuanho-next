@@ -1,7 +1,7 @@
 /**
  * The mascot striking the wooden bell by swapping frames of one image (no separate arm sprite): wind-up, swing,
  * hit (eyes closed, the strike sounds, the phone buzzes, the whole picture squashes a little), swing back, idle.
- * About 0.27 s in total. A new tap restarts the sequence at once (old timers cancelled), never queues behind it.
+ * About 0.23 s in total; the strike lands 50 ms after the touch so the sound stays close to the tap. A new tap restarts the sequence at once (old timers cancelled), never queues behind it.
  *
  * Frames swap by writing `img.src` directly, so a tap costs no React render.
  */
@@ -18,8 +18,8 @@ type FrameName = keyof typeof TAP_FRAMES;
 
 /** [frame, how long it holds in ms]. The hit frame is where the strike lands. */
 const STRIKE_SEQUENCE: readonly (readonly [FrameName, number])[] = [
-  ['wind', 45],
-  ['mid', 45],
+  ['wind', 25],
+  ['mid', 25],
   ['hit', 120],
   ['mid', 60],
   ['idle', 0],
