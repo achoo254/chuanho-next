@@ -9,7 +9,7 @@ Runbook deploy của repo này. Quy tắc chung của hệ sinh thái (tên, IdP
 | Phần | Ở đâu |
 |---|---|
 | Web (React + Vite, tĩnh) | `/var/www/chuanho/dist`, nginx phục vụ trực tiếp |
-| Server API (Node, Express 5, một file bundle) | systemd `chuanho-server`, loopback `127.0.0.1:5330`, Node 22 ở `/opt/node22`; **chưa cài lên `.65`** (mục Server API) |
+| Server API (Node, Express 5, một file bundle) | systemd `chuanho-server`, loopback `127.0.0.1:5330`, Node 22 ở `/opt/node22`; đã chạy trên `.65` từ 15/11/2026 (mục Server API) |
 | Database | Postgres đang chạy trên `.65`, database `chuanho`, role `chuanho`; migration chạy khi server khởi động |
 | Đường vào | Cloudflare (proxied, SSL "full") → nginx `conf.d/chuanho.hoandat.com.conf` → file tĩnh; `/api/`, `/auth/`, `/healthz` → server |
 | Ảnh và âm thanh | `/art/…` và `/audio/…` nằm trong bản phát hành, cache một ngày |
@@ -104,8 +104,9 @@ Mã ở [`apps/server`](../apps/server), hợp đồng dữ liệu ở [`package
 server; server chỉ giữ dữ liệu của người đã đăng nhập. `pnpm build` tạo `apps/server/dist/server/index.mjs` (mọi thư
 viện đã gộp, chỉ cần Node) và migration nằm ở `apps/server/drizzle`. Unit:
 [`infra/chuanho-server.service`](../infra/chuanho-server.service) chạy bundle từ `/var/www/chuanho/server/dist/server/`
-với migration ở `/var/www/chuanho/server/drizzle` (cùng vị trí tương đối như trong repo). `infra/deploy.sh` và CI hiện
-chỉ đẩy `apps/web/dist`: phải thêm bước đẩy server trước khi bật API trên `.65`.
+với migration ở `/var/www/chuanho/server/drizzle` (cùng vị trí tương đối như trong repo). CI và `infra/deploy.sh` đẩy cả hai bản: bản server vào
+`ci-incoming/server-<id>` rồi `chuanho-activate-server <id>` (infra/activate-server.sh: chuyển vào `server/`, restart, kiểm
+`/healthz`, hỏng thì trả `server.prev`; bỏ qua nếu dịch vụ chưa cài), sau đó bản web.
 
 | Route | Ai gọi | Việc |
 |---|---|---|
