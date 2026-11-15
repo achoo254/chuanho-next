@@ -26,8 +26,13 @@ làm đăng nhập và đồng bộ), nên dev chỉ chạy web và chưa có pr
 | [`apps/web/src/engine`](apps/web/src/engine) | Bản 3D: chọn WebGPU hoặc WebGL2, khởi động và dọn Babylon.js, bộ giảm chất lượng tự động (hàm quyết định thuần có test), trang `game-3d-shell` |
 | [`apps/web/src/scene`](apps/web/src/scene) | Cảnh diorama 3D: bố cục sân, bộ khối tạm, nạp mô hình theo tên, ánh sáng ba giờ trong ngày, hậu kỳ, camera tự khớp khung (và cảnh xếp lớp của bản 2D) |
 | [`apps/web/src/input`](apps/web/src/input) | Chọn vật bằng tia từ con trỏ, rung và kéo camera, phím tắt |
+| [`apps/web/src/character`](apps/web/src/character) | Bản 3D: nhân vật dựng bằng code (đầu, thân, tay, chân trên các nút khớp, decal mặt và má), dùi và xâu hạt trong tay, hoạt ảnh gõ mõ theo bảng khóa thời gian; các hàm thuần có test (tầm với của tay, mốc thời gian cú gõ, tư thế, thở và chớp mắt) |
+| [`apps/web/src/modes`](apps/web/src/modes) | Bản 3D: các chế độ chơi trong cảnh (thắp hương, Mõ Beat, tụng kinh, Mõ vô cực, kết phiên), sân khấu nối React với cảnh (mõ trên đài sen, miệng mõ, skin, nén hương, nốt cầu sáng, bụi và khói), định tuyến từ vật sang chế độ |
+| [`apps/web/src/share3d`](apps/web/src/share3d) | Bản 3D: chụp cảnh 1080 × 1920 bằng camera riêng rồi đè chữ, chỉ số bằng các bước vẽ dùng chung với thẻ 2D |
 | [`apps/web/src/hud`](apps/web/src/hud) | HUD biểu tượng đè lên canvas, màn nạp, nút Bắt đầu, bảng "i" (giới thiệu và cam kết) |
 | [`apps/web/src/fallback`](apps/web/src/fallback) | Ảnh tĩnh và thông báo ngắn cho máy không có WebGL2 |
+| [`apps/web/public/models`](apps/web/public/models) | Mô hình GLB do AI sinh (mõ, dùi, bát, chuông, cột son), nguồn ở `CREDITS.md` |
+| [`apps/web/public/art/character`](apps/web/public/art/character), [`apps/web/public/art/textures`](apps/web/public/art/textures) | Decal mặt và má hồng của nhân vật; texture lặp cho ngói, đá lát, sơn son, lá, gỗ |
 | [`apps/web/public/decoders/babylon`](apps/web/public/decoders/babylon) | Bộ giải nén meshopt và KTX2 của Babylon 9.36 (chép nguyên từ bản phát hành), tự host để không nạp gì từ CDN |
 
 Gói `@achoo254/*` cài từ tag git của `shared-next` (`github:achoo254/shared-next#v0.12.0&path:/packages/<gói>`),
@@ -46,7 +51,7 @@ pnpm lint         # eslint + check:brand + check:tokens
 pnpm test         # vitest, tối đa 2 worker
 ```
 
-## Bản 3D (đang dựng, chưa là mặc định)
+## Bản 3D (chưa là mặc định)
 
 Trang mặc định vẫn là bản 2D. Bản 3D (Babylon.js, canvas phủ toàn cửa sổ, HUD biểu tượng, thế giới là menu) chỉ bật khi
 địa chỉ có `?v=3d` (hoặc `#3d`), ví dụ `http://localhost:5331/?v=3d`. Babylon nằm trong các gói tách riêng, chỉ tải khi
@@ -58,12 +63,37 @@ bật bản 3D, nên gói đầu của bản 2D gần như không đổi.
 | `quality=low\|medium\|high\|ultra` | Giữ cố định một mức chất lượng, tắt bộ giảm chất lượng tự động (để thử và chụp ảnh) |
 | `light=lanternNight\|mistyMorning` | Mở ở giờ khác (mặc định hoàng hôn); nút mặt trời trên HUD đổi giờ mượt |
 
-Canvas ghi `data-backend`, `data-quality`, `data-fps` để kiểm nhanh trong DevTools. Phím: Space hoặc Enter gõ mõ, 1 đến 3
-chọn thắp hương, Mõ Beat, tụng kinh, Esc quay lại. Bấm vật trong sân (lư hương, giá kinh, mõ, chuông, bát, bảng gỗ) hiện
-biểu tượng hành động; các chế độ chơi chưa nối vào bản 3D.
+Canvas ghi `data-backend`, `data-quality`, `data-fps` để kiểm nhanh trong DevTools.
 
-Mô hình: cảnh dựng bằng khối hình học tạm. Khi có file `apps/web/public/models/<tên>.glb` (tên ở `PROP_ASSET_FILES`
-trong [`diorama-layout.ts`](apps/web/src/scene/diorama-layout.ts)), mô hình đó tự thay khối tạm, không cần sửa code.
+### Chơi trong bản 3D
+
+Thế giới là menu: bấm lư hương để thắp hương, giá kinh để tụng kinh, mõ để chọn Mõ Beat hoặc Mõ vô cực, chuông và bát để
+nghe tiếng; bảng gỗ (Sổ, Đài) vẫn "sắp có". Thanh biểu tượng ở góc làm đường dự phòng. Phím: Space hoặc Enter gõ mõ (ở sân là
+gõ cho vui), 1 đến 3 vào thắp hương, Mõ Beat, tụng kinh, Esc về sân.
+
+- **Gõ mõ:** nhân vật giơ dùi, vung, đập xuống đỉnh mõ 45 ms sau lúc chạm (cả chuỗi khoảng 0,23 giây), mõ bẹp rồi nảy, bụi
+  nhỏ bay lên, mặt nhắm mắt cười. Tiếng mõ được hẹn trên đồng hồ âm thanh đúng mốc đập (45 ms sau chạm), rung máy phát ngay
+  lúc chạm. Chạm liên tục thì cú gõ bắt đầu lại, không xếp hàng.
+- **Thắp hương:** giữ ngón tay hoặc chuột trên lư hương (hoặc giữ Space trên nút giữ), nén hương cháy dần, đầu than sáng, khói
+  bay; xong thì thẻ nhỏ mời sang bước kế của phiên.
+- **Mõ Beat:** cùng bộ sinh nốt, chấm nhịp và nhạc tổng hợp như bản 2D; nốt là quả cầu sáng bay theo đường cong tới đỉnh mõ,
+  chạm ở đâu trên màn hình cũng là gõ.
+- **Tụng kinh:** camera hạ về phía giá kinh, lời kinh trên tờ giấy nổi, mỗi tiếng mõ sáng một chữ.
+- **Mõ vô cực:** gõ tự do, "+1", gõ tự động, nền lofi, skin mõ đổi chất liệu của chính quả mõ.
+- **Kết phiên và chia sẻ:** thẻ kết quả, nhiệm vụ nhỏ trong ngày; đồ trang trí mở bằng công đức hiện thành vật trong sân;
+  thẻ chia sẻ là ảnh chụp từ cảnh 3D kèm chỉ số tích cực.
+
+| Tham số để chụp ảnh hoặc thử nhanh | Tác dụng |
+|---|---|
+| `play=yard\|incense\|beat\|sutra\|endless\|sessionEnd\|share` | Vào thẳng chế độ đó, bỏ màn Bắt đầu (tiếng mở khi chạm lần đầu) |
+| `freeze=<ms>` | Giữ cú gõ ở thời điểm đó sau lúc chạm (45 là lúc đập) |
+| `song=<ms>` (cùng `play=beat`) | Dừng bài Mõ Beat ở thời điểm đó, các nốt trước đã trúng; không tiếng, không lưu |
+
+Mô hình: khi có `apps/web/public/models/<tên>.glb` (tên ở `PROP_ASSET_FILES` trong
+[`diorama-layout.ts`](apps/web/src/scene/diorama-layout.ts)), mô hình thay khối dựng bằng code, được xoay và co theo
+`PROP_MODEL_FITS` cho khớp chiều cao khối nó thay. Hiện dùng mô hình AI cho mõ, dùi, bát, chuông và cột son; các vật còn lại
+(chính điện, gác chuông, cây bồ đề, đèn lồng, lư hương, giá kinh, đài sen) dựng bằng code kèm texture AI vì mô hình AI bị méo.
+Mặt nhân vật lấy từ `public/art/character/` khi có, thiếu thì tự vẽ bằng canvas.
 
 ## Kế hoạch
 
