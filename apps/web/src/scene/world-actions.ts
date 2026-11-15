@@ -23,7 +23,7 @@ export const PROP_ACTIONS: Readonly<Record<InteractivePropId, readonly WorldActi
 const COMING_SOON: ReadonlySet<WorldAction> = new Set<WorldAction>(['fortune']);
 
 /** The corner icon bar: every action reachable without aiming at the scene. */
-export const SHORTCUT_BAR_ACTIONS: readonly WorldAction[] = ['incense', 'beat', 'sutra', 'endless', 'journal', 'gentle', 'radio', 'fortune', 'room'];
+export const SHORTCUT_BAR_ACTIONS: readonly WorldAction[] = ['incense', 'beat', 'sutra', 'journal', 'gentle', 'radio', 'room'];
 
 /** Number keys 1–3 pick the three steps of a session, in order. */
 export const NUMBER_KEY_ACTIONS: readonly WorldAction[] = ['incense', 'beat', 'sutra'];

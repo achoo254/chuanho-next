@@ -8,7 +8,6 @@ import { useGameSession } from '../game/game-session-context';
 import { MO_SKINS, isUnlocked } from '../game/player-progress';
 import { HudIcon, IconButton } from '../hud/hud-icons';
 import { useI18n } from '../i18n/i18n';
-import { useLofiBackdrop } from '../audio/use-lofi-backdrop';
 import { useQuietHourStrokes } from '../quiet-hour/quiet-hour-provider';
 import { useFloatingText } from '../ui/floating-text';
 import { ModeBar, MoFloatAnchor, type PlayModeProps, StrikeTapLayer, useRegisterStrike } from './mode-chrome';
@@ -22,10 +21,8 @@ export function EndlessMode({ stage, onBack, registerStrike }: PlayModeProps): R
   const { progress, updateProgress } = useGameSession();
   const [count, setCount] = useState(0);
   const [auto, setAuto] = useState(false);
-  const [lofi, setLofi] = useState(false);
   const floats = useFloatingText();
   const { spawn } = floats;
-  useLofiBackdrop(lofi);
 
   const strike = useCallback((): void => {
     stage.strike();
@@ -55,7 +52,6 @@ export function EndlessMode({ stage, onBack, registerStrike }: PlayModeProps): R
           {t('endless.count', { n: count })}
         </span>
         <IconButton icon="auto" label={`${t('endless.auto')}: ${auto ? t('common.on') : t('common.off')}`} pressed={auto} dataId="endless-auto" onClick={() => setAuto((v) => !v)} />
-        <IconButton icon={lofi ? 'soundOn' : 'soundOff'} label={`${t('endless.lofi')}: ${lofi ? t('common.on') : t('common.off')}`} pressed={lofi} dataId="endless-lofi" onClick={() => setLofi((v) => !v)} />
       </ModeBar>
       <fieldset className="play-skins" data-id="endless-skins">
         <legend className="sr-only">{t('endless.skins')}</legend>
