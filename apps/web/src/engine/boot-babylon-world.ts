@@ -25,7 +25,7 @@ import { type RenderBackend, createRenderEngine } from './create-render-engine';
 import type { RendererPreference } from './game-3d-flag';
 import { startingQualityLevel } from './quality-levels';
 import { createRenderGuard, warmUpScene } from './warm-up-scene';
-import { createQualityScaler } from './quality-scaler';
+import { createQualityScaler, pixelRatioFor } from './quality-scaler';
 import { createPropPulse } from './prop-pulse';
 import { configureSelfHostedDecoders } from './self-hosted-decoders';
 
@@ -150,13 +150,26 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
       onHover: options.onHover,
     });
     cleanups.push(() => picking.dispose());
+    const guard = createRenderGuard(() => scene.isReady());
+    // Resizing the canvas wipes its picture, so a size change waits for the next frame that draws (see renderFrame).
+    let pixelRatio = 1;
+    let canvasSizeStale = false;
+    const syncCanvasSize = (): void => {
+      canvasSizeStale = false;
+      engine.setHardwareScalingLevel(1 / pixelRatio); // also resizes the canvas to the host
+    };
     const startLevel = options.pinnedQuality ?? startingQualityLevel(options.coarsePointer);
-    const scaler = createQualityScaler(engine, startLevel, options.pinnedQuality !== null, (level) => {
+    const scaler = createQualityScaler(startLevel, options.pinnedQuality !== null, (level) => {
       lighting.applyQuality(level);
       backdrop.applyQuality(level);
       post.applyQuality(level);
       canvas.dataset.quality = level.id;
+      pixelRatio = pixelRatioFor(level);
+      canvasSizeStale = true;
+      // Shadows and post-processing just changed, so every material recompiles: keep the last picture meanwhile.
+      guard.arm();
     });
+    syncCanvasSize();
     canvas.dataset.backend = backend;
     // A lost graphics context (a phone running short of GPU memory) also blanks the canvas; count it for DevTools.
     canvas.dataset.contextLost = '0';
@@ -171,7 +184,6 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
     checkAborted();
     options.onProgress(1);
 
-    const guard = createRenderGuard(() => scene.isReady());
     let timeMs = 0;
     let fpsWindowMs = 0;
     const renderFrame = (): void => {
@@ -185,8 +197,12 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
       lighting.update(deltaMs);
       pulse.update(deltaMs);
       stage.update(deltaMs);
-      // Just after a scene change, while a shader still compiles, the last picture stays up instead of a blank frame.
-      if (guard.canDraw()) scene.render();
+      // Just after a scene or quality change, while a shader still compiles, the last picture stays up instead of a
+      // blank frame. A pending canvas resize happens only here, right before a draw, so no frame shows a wiped canvas.
+      if (guard.canDraw()) {
+        if (canvasSizeStale) syncCanvasSize();
+        scene.render();
+      }
       scaler.onFrame(deltaMs);
       fpsWindowMs += deltaMs;
       if (fpsWindowMs >= 1000) {
@@ -201,9 +217,15 @@ export async function bootBabylonWorld(options: WorldBootOptions): Promise<World
     };
     syncVisibility();
     document.addEventListener('visibilitychange', syncVisibility);
-    const resize = new ResizeObserver(() => engine.resize());
+    const resize = new ResizeObserver(() => {
+      canvasSizeStale = true;
+    });
     resize.observe(host);
-    const onWindowResize = (): void => scaler.refreshPixelRatio();
+    const onWindowResize = (): void => {
+      // The window may have moved to a screen with another pixel ratio.
+      pixelRatio = pixelRatioFor(scaler.level);
+      canvasSizeStale = true;
+    };
     window.addEventListener('resize', onWindowResize);
     cleanups.push(() => {
       engine.stopRenderLoop();
