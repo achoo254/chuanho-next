@@ -37,6 +37,12 @@ reload (CI không đổi được nginx).
 Nginx khai báo kiểu `application/wasm`, `model/gltf-binary` và cache một ngày cho `/models/` và `/decoders/`. Lưu ý: file `/models/<tên>.glb` chưa có thì `location /` trả về `index.html`
 (mã 200); game nhận ra điều đó qua bốn byte đầu (`glTF`) và dùng khối tạm.
 
+**Kết nối ra ngoài ưu tiên IPv4.** IPv6 đi ra từ .65 không chạy và kết nối IPv4 đôi khi mất hơn 2 giây, nên với mặc
+định của Node 22 (happy eyeballs, 250 ms mỗi địa chỉ) lời gọi qua Cloudflare hay bên thứ ba hỏng với
+`AggregateError [ETIMEDOUT]`. Process chạy với `NODE_OPTIONS=--dns-result-order=ipv4first
+--network-family-autoselection-attempt-timeout=2500` (`Environment=` trong `infra/chuanho-server.service`): thử IPv4 trước, đợi mỗi địa chỉ 2,5 giây. Đổi unit thì chép lại vào `/etc/systemd/system/`, `systemctl daemon-reload && systemctl restart chuanho-server`.
+Kiểm: `tr '\0' '\n' < /proc/<pid>/environ | grep NODE_OPTIONS`.
+
 ## Lần đầu
 
 1. **DNS:** bản ghi `A` `chuanho.hoandat.com` **proxied** trỏ về `<SERVER_65_IP>` (cách gọi Cloudflare API: runbook của
