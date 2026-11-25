@@ -60,11 +60,11 @@ Kiểm: `tr '\0' '\n' < /proc/<pid>/environ | grep NODE_OPTIONS`.
 3. **Secret của repo** (Settings → Secrets → Actions, và environment `production`): `DEPLOY_SSH_KEY` (khoá riêng ed25519
    của `chuanho-deploy`), `DEPLOY_KNOWN_HOSTS` (`ssh-keyscan -p <cổng> -t ed25519,ecdsa,rsa <máy chủ>`), `DEPLOY_HOST`,
    `DEPLOY_PORT`.
-4. **Release đầu:** push lên `main` (CI tự deploy) hoặc `SSH_TARGET=<alias> bash infra/deploy.sh`.
+4. **Release đầu:** `tools/deploy-prod.sh` của workspace (workflow `deploy`) hoặc `SSH_TARGET=<alias> bash infra/deploy.sh`.
 
-## Deploy tự động (CI)
+## Deploy qua CI
 
-Mỗi lần push lên `main` là tự deploy. `ci` (lint, typecheck, test, build) xanh thì `deploy.yml` chạy: job `build` (không có
+**Deploy khi gọi (từ 25/11/2026):** push lên `main` chỉ chạy `ci`. Xong một việc thì chạy `tools/deploy-prod.sh` của workspace `hoandat-app` (hoặc `gh workflow run deploy.yml`); mỗi tối 23:00 workflow tự chạy nếu `main` đi trước lần deploy thành công gần nhất. Workflow lấy đầu `main`, chờ `ci` của commit đó xanh rồi `deploy.yml` chạy: job `build` (không có
 secret) tạo artifact `apps/web/dist` với mã bản dạng `YYYYMMDD-HHMMSS-<sha12>`; job `deploy` tải artifact, rsync lên
 `/var/www/chuanho/ci-incoming/<mã bản>` bằng user `chuanho-deploy`, rồi chạy lệnh sudo duy nhất user đó có:
 `sudo -n /usr/local/sbin/chuanho-activate-incoming <mã bản>`. Lệnh này chuyển bản tải lên vào thư mục chỉ root đọc được
