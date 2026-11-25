@@ -64,7 +64,7 @@ Kiểm: `tr '\0' '\n' < /proc/<pid>/environ | grep NODE_OPTIONS`.
 
 ## Deploy qua CI
 
-**Deploy khi gọi (từ 25/11/2026):** push lên `main` chỉ chạy `ci`. Xong một việc thì chạy `tools/deploy-prod.sh` của workspace `hoandat-app` (hoặc `gh workflow run deploy.yml`); mỗi tối 23:00 workflow tự chạy nếu `main` đi trước lần deploy thành công gần nhất. Workflow lấy đầu `main`, chờ `ci` của commit đó xanh rồi `deploy.yml` chạy: job `build` (không có
+**Deploy khi gọi (từ 25/11/2026):** push lên `main` chỉ chạy `ci`. Xong một việc thì chạy `tools/deploy-prod.sh` của workspace `hoandat-app` (hoặc `gh workflow run deploy.yml`); mỗi tối 23:00 workflow tự chạy nếu `main` đi trước lần deploy thành công gần nhất. Workflow lấy đầu `main` (không chờ `ci`) rồi `deploy.yml` chạy: job `build` (không có
 secret) tạo artifact `apps/web/dist` với mã bản dạng `YYYYMMDD-HHMMSS-<sha12>`; job `deploy` tải artifact, rsync lên
 `/var/www/chuanho/ci-incoming/<mã bản>` bằng user `chuanho-deploy`, rồi chạy lệnh sudo duy nhất user đó có:
 `sudo -n /usr/local/sbin/chuanho-activate-incoming <mã bản>`. Lệnh này chuyển bản tải lên vào thư mục chỉ root đọc được
