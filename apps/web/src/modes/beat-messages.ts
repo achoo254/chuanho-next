@@ -15,4 +15,11 @@ const en: Record<keyof typeof vi, string> = {
   loading: 'Opening the song…',
 };
 
-export const useBeatText = createFeatureText(vi, en);
+const zhCN: Record<keyof typeof vi, string> = {
+  source: '选择曲目',
+  builtIn: 'Lofi 节拍',
+  library: '曲库中的歌',
+  loading: '正在打开曲目…',
+};
+
+export const useBeatText = createFeatureText(vi, en, zhCN);

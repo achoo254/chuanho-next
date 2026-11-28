@@ -1,4 +1,4 @@
-/** Words of the account menu (Vietnamese and English). The HUD button's own names live in hud-messages.ts. */
+/** Words of the account menu (Vietnamese, English and Simplified Chinese). The HUD button's own names live in hud-messages.ts. */
 import { createFeatureText } from '../features/feature-text';
 
 const vi = {
@@ -65,4 +65,35 @@ const en: Record<AccountTextKey, string> = {
   startCleanNote: 'The data on this device will be cleared, then your account data is loaded. Until then this account does not sync.',
 };
 
-export const useAccountText = createFeatureText(vi, en);
+const zhCN: Record<AccountTextKey, string> = {
+  you: '你',
+  syncedAt: '已于 {time} 同步',
+  syncing: '正在同步…',
+  notSynced: '尚未同步过',
+  offline: '暂时连不上，会自动重试。数据仍保存在本机。',
+  error: '同步没成功，会自动重试。数据仍保存在本机。',
+  journalFull: '服务器上的日记已满：新条目只保存在本机。',
+  deleteStart: '删除服务器上的全部数据',
+  deleteAsk: '删除服务器上保存的全部功德和日记？删除后无法恢复。',
+  deleteServerOnly: '只删除服务器上的',
+  deleteServerOnlyNote: '本机数据保持不变，你会被退出登录，以免数据再次上传。',
+  deleteEverywhere: '本机的也一起删除',
+  keep: '算了，保留',
+  deleting: '正在删除…',
+  deleted: '服务器上的数据已删除。',
+  deleteFailed: '没删成，请稍后再试。',
+  signOut: '退出登录',
+  signingOut: '正在退出…',
+  signOutFailed: '没能退出登录，请稍后再试。',
+  signOutWipe: '退出登录时清除本机数据',
+  mergeAsk: '把本机的数据合并到你的账号吗？',
+  mergeNote: '本机现有的功德和日记会保存到账号里。',
+  merge: '合并',
+  noMerge: '不合并，从空白开始',
+  noMergeNote: '本机数据会被清除，然后载入账号的数据。',
+  otherOwnerAsk: '本机的数据属于另一个账号，所以不会上传到你的账号。',
+  startClean: '为这个账号从头开始',
+  startCleanNote: '本机数据会被清除，然后载入账号的数据。做出选择之前，这个账号不会同步。',
+};
+
+export const useAccountText = createFeatureText(vi, en, zhCN);

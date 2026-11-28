@@ -103,6 +103,14 @@ describe('signed in through the hoandat.com account', () => {
     expect(location(callback)).toBe(RETURN_TO);
   });
 
+  it('asks the IdP for the page language, Simplified Chinese included, and Vietnamese otherwise', async () => {
+    const uiLocales = async (lang: string): Promise<string | null> =>
+      new URL(location(await fetch(`${server.origin}/auth/login?return=%2F&lang=${lang}`, { redirect: 'manual' }))).searchParams.get('ui_locales');
+    expect(await uiLocales('zh-CN')).toBe('zh-CN');
+    expect(await uiLocales('en')).toBe('en');
+    expect(await uiLocales('fr')).toBe('vi');
+  });
+
   it('rejects a callback without the login cookie or with another state', async () => {
     const start = await fetch(`${server.origin}/auth/login`, { redirect: 'manual' });
     const consent = await fetch(location(start), { redirect: 'manual' });

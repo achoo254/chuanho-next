@@ -16,6 +16,7 @@ import {
   isRecord,
   parseSyncResponse,
 } from '@chuanho/contract';
+import { isLocale } from '../i18n/locales';
 import { parseQuietHourStatus } from '../quiet-hour/quiet-hour-status';
 
 export type ApiError =
@@ -115,7 +116,7 @@ export function createAccountApi(fetcher: FetchLike = (input, init) => fetch(inp
 /** Where the one-tap sign-in goes: the server's start of sign-in, coming back to the same page in the same language. */
 export function signInHref(returnPath: string, locale: string): string {
   const safe = returnPath.startsWith('/') && !returnPath.startsWith('//') && returnPath.length <= 200 ? returnPath : '/';
-  return `/auth/login?${new URLSearchParams({ return: safe, lang: locale === 'en' ? 'en' : 'vi' }).toString()}`;
+  return `/auth/login?${new URLSearchParams({ return: safe, lang: isLocale(locale) ? locale : 'vi' }).toString()}`;
 }
 
 /** The app's one client. */

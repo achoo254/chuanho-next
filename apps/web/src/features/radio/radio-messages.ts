@@ -63,4 +63,31 @@ const en: Readonly<Record<RadioKey, string>> = {
   'focus.hint': 'A soft chime for breaks and back to work',
 };
 
-export const useRadioText = createFeatureText<RadioKey>(vi, en);
+const zhCN: Readonly<Record<RadioKey, string>> = {
+  title: '电台',
+  modes: '模式',
+  'mode.auto': '按时段自动',
+  'mode.autoLabel': '按时段自动：{mode}',
+  'mode.sleep': '睡眠',
+  'mode.work': '赶 deadline',
+  play: '播放',
+  pause: '暂停',
+  skip: '下一首',
+  track: '第 {n} 首',
+  listened: '已听 {n} 分钟',
+  timers: '定时关闭',
+  'timer.minutes': '{n}分',
+  'timer.minutesLabel': '{n} 分钟后关闭',
+  'timer.untilStop': '∞',
+  'timer.untilStopLabel': '直到我手动关闭',
+  'timer.left': '{time} 后关闭',
+  'timer.done': '音乐已关，晚安',
+  dim: '熄屏',
+  wake: '点一下唤醒',
+  'focus.focus': '专注 {time}',
+  'focus.break': '休息 {time}',
+  'focus.toggle': '25/5 休息铃',
+  'focus.hint': '轻柔的铃声提醒休息和回来工作',
+};
+
+export const useRadioText = createFeatureText<RadioKey>(vi, en, zhCN);

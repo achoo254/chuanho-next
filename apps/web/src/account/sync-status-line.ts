@@ -1,4 +1,5 @@
 /** The one line of the account menu that says where sync stands. Pure: picks the words and formats the time. */
+import { INTL_LOCALES, isLocale } from '../i18n/locales';
 import type { SyncStatus } from '../sync/sync-engine';
 import type { AccountTextKey } from './account-messages';
 
@@ -14,7 +15,7 @@ export function syncTimeLabel(at: number, now: number, locale: string): string {
   const options: Intl.DateTimeFormatOptions = sameDay
     ? { hour: '2-digit', minute: '2-digit' }
     : { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' };
-  return new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'vi-VN', options).format(when);
+  return new Intl.DateTimeFormat(INTL_LOCALES[isLocale(locale) ? locale : 'vi'], options).format(when);
 }
 
 /** `now` only decides whether the time needs its day; it defaults to the device clock. */

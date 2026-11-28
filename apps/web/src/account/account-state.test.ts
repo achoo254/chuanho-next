@@ -52,5 +52,6 @@ describe('sync status line', () => {
 
   it('adds the day for an older sync', () => {
     expect(syncTimeLabel(at, at + 2 * 86_400_000, 'en')).toMatch(/15\/01/);
+    expect(syncTimeLabel(at, at + 2 * 86_400_000, 'zh-CN')).toMatch(/01\/15/);
   });
 });

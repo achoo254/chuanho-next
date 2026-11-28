@@ -1,5 +1,5 @@
 /**
- * The words of the "say it gently" screen in both languages. The sentences of the bank stay Vietnamese in both: they
+ * The words of the "say it gently" screen in every language. The sentences of the bank stay Vietnamese in all: they
  * are meant to be sent to Vietnamese speakers. A new group or tone adds its chip label here (`group.*`, `tone.*`).
  */
 import { createFeatureText } from '../feature-text';
@@ -58,4 +58,31 @@ const en: Record<keyof typeof vi, string> = {
   share: 'Share',
 };
 
-export const useGentleText = createFeatureText(vi, en);
+const zhCN: Record<keyof typeof vi, string> = {
+  title: '温柔地说',
+  intro: '心里有火，但还是想好好说？选个情境和语气，给你一句可以发出去的话（越南语）。',
+  privacy: '你的所有选择都只留在本机，不会发送到任何地方。',
+  loading: '正在打开温柔话语本…',
+  failed: '句子没加载出来。检查一下网络再试吧。',
+  retry: '重试',
+  'step.group': '关于',
+  'step.situation': '情境',
+  'step.tone': '语气',
+  'group.work': '工作',
+  'group.friends': '朋友',
+  'group.family': '家人',
+  'group.love': '恋爱',
+  'tone.soft': '温和',
+  'tone.direct': '直接但礼貌',
+  'tone.funny': '幽默',
+  pickSituation: '选一个情境，看看推荐的句子。',
+  resultLabel: '推荐句子',
+  counter: '第 {n}/{total} 句',
+  another: '换一句',
+  copy: '复制',
+  copied: '已复制',
+  copyFailed: '没复制成功，请选中句子手动复制。',
+  share: '分享',
+};
+
+export const useGentleText = createFeatureText(vi, en, zhCN);

@@ -6,7 +6,7 @@
 import { LanguageSwitch } from '@achoo254/app-shell';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { brand } from '../brand';
-import { useI18n } from '../i18n/i18n';
+import { LOCALES, useI18n } from '../i18n/i18n';
 import { LIGHTING_PRESET_IDS, type LightingPresetId } from '../scene/lighting-presets';
 import { HudIcon, IconButton, PRESET_ICONS } from './hud-icons';
 import { presetKey, useHudText } from './hud-messages';
@@ -81,7 +81,7 @@ export function SettingsMenu({ preset, muted, onPreset, onToggleSound, onInfo }:
           </div>
           <div className="settings-row">
             <span className="settings-label">{text('languageLabel')}</span>
-            <LanguageSwitch locale={locale} domain={brand.primaryTenant.domain} onLocaleChange={setLocale} />
+            <LanguageSwitch locale={locale} locales={LOCALES} domain={brand.primaryTenant.domain} onLocaleChange={setLocale} />
           </div>
           <button
             type="button"

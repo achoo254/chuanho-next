@@ -1,9 +1,10 @@
 /**
- * What Tiểu Đệ, the little novice of the yard, says (Vietnamese and English), plus the few words around the chip.
+ * What Tiểu Đệ, the little novice of the yard, says (Vietnamese, English and Simplified Chinese), plus the few words around the chip.
  * Each `line.*` key is one entry of the bank in tieude-lines.ts; a new line needs both a key here and an entry there
  * (a test checks they match). House rules for every line: gentle and short, about the player's body, breath, rest or
  * the yard's own tools; never money, donations, sharing, buying, guilt or streaks.
  */
+import type { Locale } from '../../i18n/locales';
 import { createFeatureText } from '../feature-text';
 
 const vi = {
@@ -92,9 +93,52 @@ const en: Record<keyof typeof vi, string> = {
   'line.night3': 'Put the Radio on sleep mode and close your eyes; I will watch the yard.',
 };
 
+const zhCN: Record<keyof typeof vi, string> = {
+  name: 'Tiểu Đệ',
+  label: 'Tiểu Đệ 的温柔提醒',
+  dismiss: '隐藏提醒',
+  silence: '今天不再提醒',
+  'line.water': '喂，喝口水吧。大脑也需要浇浇水。',
+  'line.water2': '你的水杯觉得自己有点被冷落了。',
+  'line.breath': '吸气数四下，呼气数六下。这就是一次迷你禅修。',
+  'line.jaw': '松一松下巴吧，它已经很辛苦了。',
+  'line.shoulders': '放下肩膀，转三圈。肩膀可不是挂压力的衣架。',
+  'line.neck': '轻轻把头往左歪、往右歪。脖子会谢谢你。',
+  'line.eyes': '看看远处二十秒。眼睛也需要休息。',
+  'line.mo': '敲一下木鱼，只为轻松一点。笃。',
+  'line.mo2': '不用敲完一整轮，一声笃就够可爱了。',
+  'line.bell': '敲一下钟，让余音把心静下来。',
+  'line.incense': '点一炷香，看着青烟飘散。很治愈。',
+  'line.journal': '今天说了句重话？在日记里记一行吧，没人打分。',
+  'line.journal2': '忍住一句冲口而出的话，值得在日记里记一行。为自己骄傲一下。',
+  'line.radio': '需要专注？打开电台吧，我来让庭院保持安静。',
+  'line.gentle': '正要发一条很冲的消息？先试试“温柔地说”。',
+  'line.fortune': '今天的签求了吗？只是图个开心哦。',
+  'line.kind': '你做得比你以为的要好。真的。',
+  'line.slow': '慢下来一拍也没关系，事情会等你的。',
+  'line.rest': '累了？那就歇歇，没关系。庭院一直都在。',
+  'line.posture': '坐直一点，别让脊椎变成问号。',
+  'line.snack': '饿了？吃点清淡的，别等肚子叫得比木鱼还响。',
+  'line.sky': '看一会儿云吧，今天的天空也在努力呢。',
+  'line.screen': '把视线从屏幕移开一分钟，看看房间四周。',
+  'line.gratitude': '想一件今天让你微笑的小事。想到了吗？',
+  'line.merit': '你今天积了 {merit} 功德，庭院都亮了起来。',
+  'line.merit2': '今天 {merit} 功德。不为炫耀，但看着很舒心吧？',
+  'line.merit3': '谢谢你今天来敲木鱼。{merit} 功德，庭院真好看。',
+  'line.morning': '早上好！喝咖啡前先来一杯温水。',
+  'line.morning2': '这个早上只挑一件主要的事，做完就赢了。',
+  'line.morning3': '打开窗，呼吸一下清晨的空气，免费的。',
+  'line.evening': '已经傍晚了。站起来，把坐了一天的身体伸展开。',
+  'line.evening2': '辛苦的一天。拍拍自己的肩膀吧。',
+  'line.evening3': '好好吃顿晚饭，别对着屏幕匆匆扒两口。',
+  'line.night': '夜深了，早点睡，明早更精神。',
+  'line.night2': '把手机放得离床远一点，你的睡眠会感谢你。',
+  'line.night3': '把电台调到睡眠模式，闭上眼睛吧；我来看着庭院。',
+};
+
 export type TieuDeTextKey = keyof typeof vi;
 
-/** Both dictionaries, for the test that checks every line of the bank has words. */
-export const TIEUDE_TEXT: Readonly<Record<'vi' | 'en', Readonly<Record<TieuDeTextKey, string>>>> = { vi, en };
+/** Every dictionary, for the test that checks every line of the bank has words. */
+export const TIEUDE_TEXT: Readonly<Record<Locale, Readonly<Record<TieuDeTextKey, string>>>> = { vi, en, 'zh-CN': zhCN };
 
-export const useTieuDeText = createFeatureText(vi, en);
+export const useTieuDeText = createFeatureText(vi, en, zhCN);

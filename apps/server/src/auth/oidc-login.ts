@@ -20,6 +20,14 @@ const LoginStateSchema = z.object({
 
 export type LoginState = z.infer<typeof LoginStateSchema>;
 
+/** The languages of the shared shell, passed to the IdP as `ui_locales`. */
+export const LOGIN_LANGS = ['vi', 'en', 'zh-CN'] as const;
+export type LoginLang = (typeof LOGIN_LANGS)[number];
+
+export function isLoginLang(value: unknown): value is LoginLang {
+  return LOGIN_LANGS.some((lang) => lang === value);
+}
+
 const LOGIN_TTL_SECONDS = 600;
 const b64url = (buf: Buffer): string => buf.toString('base64url');
 

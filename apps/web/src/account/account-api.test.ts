@@ -75,5 +75,7 @@ describe('signInHref', () => {
   it('returns to the same page in the same language', () => {
     expect(signInHref('/?light=lanternNight', 'en')).toBe('/auth/login?return=%2F%3Flight%3DlanternNight&lang=en');
     expect(signInHref('//evil.example', 'vi')).toBe('/auth/login?return=%2F&lang=vi');
+    expect(signInHref('/', 'zh-CN')).toBe('/auth/login?return=%2F&lang=zh-CN');
+    expect(signInHref('/', 'fr')).toBe('/auth/login?return=%2F&lang=vi');
   });
 });

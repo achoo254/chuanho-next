@@ -12,7 +12,7 @@ function sequence(seed: number): () => number {
 }
 
 describe('the line bank', () => {
-  it('has at least 30 lines, each with words in both languages', () => {
+  it('has at least 30 lines, each with words in every language', () => {
     expect(TIEUDE_LINES.length).toBeGreaterThanOrEqual(30);
     expect(new Set(TIEUDE_LINES.map((line) => line.key)).size).toBe(TIEUDE_LINES.length);
     const keys = Object.keys(TIEUDE_TEXT.vi).filter((key) => key.startsWith('line.'));
@@ -20,6 +20,7 @@ describe('the line bank', () => {
     for (const line of TIEUDE_LINES) {
       expect(TIEUDE_TEXT.vi[line.key].length).toBeGreaterThan(10);
       expect(TIEUDE_TEXT.en[line.key].length).toBeGreaterThan(10);
+      expect(TIEUDE_TEXT['zh-CN'][line.key].length).toBeGreaterThan(5);
       expect(TIEUDE_TEXT.vi[line.key].length).toBeLessThanOrEqual(110);
     }
   });
@@ -29,6 +30,7 @@ describe('the line bank', () => {
     for (const line of TIEUDE_LINES) {
       expect(TIEUDE_TEXT.vi[line.key]).not.toMatch(banned);
       expect(TIEUDE_TEXT.en[line.key]).not.toMatch(banned);
+      expect(TIEUDE_TEXT['zh-CN'][line.key]).not.toMatch(/钱|捐|转账|买|卖|分享|连续打卡/);
     }
   });
 
@@ -36,6 +38,7 @@ describe('the line bank', () => {
     for (const line of TIEUDE_LINES) {
       expect(TIEUDE_TEXT.vi[line.key].includes('{merit}')).toBe(line.merit === true);
       expect(TIEUDE_TEXT.en[line.key].includes('{merit}')).toBe(line.merit === true);
+      expect(TIEUDE_TEXT['zh-CN'][line.key].includes('{merit}')).toBe(line.merit === true);
     }
   });
 

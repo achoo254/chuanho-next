@@ -1,6 +1,6 @@
 /**
- * The words of the "Xin xăm" screen in both languages. The quẻ themselves (name, verse, meaning, today's message) stay
- * Vietnamese in both: lục bát does not translate. The honest "this is for fun" line reuses the app's main disclaimer
+ * The words of the "Xin xăm" screen in every language. The quẻ themselves (name, verse, meaning, today's message) stay
+ * Vietnamese in all: lục bát does not translate. The honest "this is for fun" line reuses the app's main disclaimer
  * (`layout.disclaimer` in i18n/messages.ts) and only adds what is particular to drawing a stick.
  */
 import { createFeatureText } from '../feature-text';
@@ -55,4 +55,29 @@ const en: Record<keyof typeof vi, string> = {
   again: 'Back to the tube',
 };
 
-export const useFortuneText = createFeatureText(vi, en);
+const zhCN: Record<keyof typeof vi, string> = {
+  title: '求签',
+  intro: '摇一摇签筒，掉出一支签，读读今天的签文。每天只求一签哦。',
+  notAdvice: '签文是为了好玩自己写的诗，不是算命，也不是建议。拿主意的始终是你自己。',
+  loading: '正在打开签筒…',
+  failed: '签筒没加载出来。检查一下网络再试吧。',
+  retry: '重试',
+  shake: '摇签筒',
+  shakeHint: '点按钮、按空格键，或轻轻摇一摇手机。',
+  shaking: '正在摇…',
+  reshow: '再看看今天的签文',
+  alreadyToday: '你今天已经求过了，这仍是你的那支签。明天再来求新签吧。',
+  tube: '签筒',
+  stickLabel: '第 {n} 签',
+  cardLabel: '今日签文（越南语）',
+  meaning: '签意',
+  today: '今日寄语',
+  copy: '复制',
+  copied: '已复制',
+  copyFailed: '没复制成功，请选中签文手动复制。',
+  share: '分享',
+  shareFooter: '在{app}求签，图个开心',
+  again: '回到签筒',
+};
+
+export const useFortuneText = createFeatureText(vi, en, zhCN);

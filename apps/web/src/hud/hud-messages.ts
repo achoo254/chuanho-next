@@ -3,7 +3,7 @@
  * hover hints. Kept beside the HUD (not in the main dictionary) so the 2D page's bundle does not carry them.
  */
 import { useCallback } from 'react';
-import { format, useI18n } from '../i18n/i18n';
+import { type Locale, format, useI18n } from '../i18n/i18n';
 import type { LightingPresetId } from '../scene/lighting-presets';
 import type { InteractivePropId, WorldAction } from '../scene/world-actions';
 
@@ -180,11 +180,98 @@ const en: Record<HudKey, string> = {
   'bubble.karma.2': 'Leave harsh words at the gate',
 };
 
+const zhCN: Record<HudKey, string> = {
+  canvas: '3D 寺院庭院：点按香炉、经架、木鱼、钟、颂钵或木板',
+  loading: '正在打开山门',
+  start: '开始',
+  info: '简介与承诺',
+  settings: '设置',
+  timeOfDayLabel: '时段',
+  soundLabel: '声音',
+  languageLabel: '语言',
+  resetView: '恢复初始视角',
+  close: '关闭',
+  signIn: '登录以保存和同步',
+  account: '账号：{name}',
+  soundOff: '静音',
+  soundOn: '打开声音',
+  timeOfDay: '切换时段：{now}',
+  shortcuts: '快捷键',
+  stats: '数据',
+  merit: '{n} 功德',
+  bestCombo: '最高连击 {n}',
+  soon: '即将推出',
+  picked: '已选择：{what}',
+  unsupportedTitle: '这台设备暂时打不开 3D 庭院',
+  unsupportedBody: '请试试新版 Chrome、Edge 或 Safari，或使用经典版。',
+  unsupportedLink: '经典版',
+  'preset.daylight': '白天',
+  'preset.sunset': '黄昏',
+  'preset.lanternNight': '灯笼夜',
+  'preset.mistyMorning': '雾晨',
+  'action.incense': '上香',
+  'action.beat': 'Mõ Beat',
+  'action.endless': '无尽木鱼',
+  'action.sutra': '诵经',
+  'action.bell': '敲钟',
+  'action.bowl': '敲颂钵',
+  'action.journal': '日记',
+  'action.gentle': '温柔地说',
+  'action.radio': '电台',
+  'action.fortune': '求签',
+  'action.room': '消业上香室',
+  'action.strike': '敲木鱼',
+  'prop.censer': '香炉',
+  'prop.sutraShelf': '经架',
+  'prop.mo': '木鱼',
+  'prop.bell': '钟',
+  'prop.bowl': '颂钵',
+  'prop.woodenBoard': '木板',
+  'bubble.meditate.0': '吸气…呼气…',
+  'bubble.meditate.1': '心静如止水',
+  'bubble.meditate.2': '放下所有烦恼',
+  'bubble.chant.0': '南无阿弥陀佛',
+  'bubble.chant.1': '读一页经，心更明亮',
+  'bubble.chant.2': '字字轻如云',
+  'bubble.knock.0': '笃笃…心里好轻',
+  'bubble.knock.1': '敲一声，少一桩烦恼',
+  'bubble.knock.2': '木鱼在唱歌，我好开心',
+  'bubble.pray.0': '愿大家都平安',
+  'bubble.pray.1': '愿人人都睡个好觉',
+  'bubble.pray.2': '愿妈妈健康，朋友快乐',
+  'bubble.bell.0': '当…整个庭院都柔和了',
+  'bubble.bell.1': '钟声一响，心就定了',
+  'bubble.bell.2': '一声钟，百般福',
+  'bubble.look.0': '今天的庭院真好看',
+  'bubble.look.1': '连落叶都好可爱',
+  'bubble.look.2': '咦，有人来了吗？',
+  'bubble.wave.0': '你好呀！快进来吧',
+  'bubble.wave.1': '在庭院里歇一会儿吧',
+  'bubble.wave.2': '嘿嘿，看到你啦！',
+  'bubble.rest.0': '打个小盹…zzz',
+  'bubble.rest.1': '阳光好暖和',
+  'bubble.rest.2': '睡一觉，脾气都变好了',
+  'bubble.walk.0': '该散散步了',
+  'bubble.walk.1': '慢慢走，心也慢下来',
+  'bubble.walk.2': '绕着庭院蹦蹦跳跳',
+  'bubble.notice.0': '咦，是你吗？',
+  'bubble.notice.1': '好棒！再来一次！',
+  'bubble.notice.2': '这声音真好听',
+  'bubble.welcome.0': '玩得真开心！歇会儿吧',
+  'bubble.welcome.1': '你做得真好',
+  'bubble.welcome.2': '完成啦，继续散步',
+  'bubble.karma.0': '说了重话？道个歉吧',
+  'bubble.karma.1': '少一次发火，多一个微笑',
+  'bubble.karma.2': '把恶语留在山门外',
+};
+
+const DICTIONARIES: Readonly<Record<Locale, Readonly<Record<HudKey, string>>>> = { vi, en, 'zh-CN': zhCN };
+
 export type HudText = (key: HudKey, vars?: Record<string, string | number>) => string;
 
 export function useHudText(): HudText {
   const { locale } = useI18n();
-  return useCallback((key, vars) => format(locale === 'en' ? en[key] : vi[key], vars), [locale]);
+  return useCallback((key, vars) => format(DICTIONARIES[locale][key], vars), [locale]);
 }
 
 export const actionKey = (action: WorldAction): HudKey => `action.${action}`;

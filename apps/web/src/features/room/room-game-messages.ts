@@ -1,5 +1,5 @@
 /**
- * The words of the room's 3D moments in both languages: the entry cutscene, the light-up cue, and the "Hộ hương"
+ * The words of the room's 3D moments in every language: the entry cutscene, the light-up cue, and the "Hộ hương"
  * (guard the incense) minigame. Kept apart from room-messages.ts so neither file grows past a screen.
  */
 import { createFeatureText } from '../feature-text';
@@ -82,6 +82,45 @@ const en: Record<keyof typeof vi, string> = {
   'demo.light': 'Watch the lighting',
 };
 
+const zhCN: Record<keyof typeof vi, string> = {
+  'intro.caption': '小沙弥走到香炉前，点一炷香迎接你…',
+  'intro.skip': '点按跳过',
+  'lit.float': '+1 炷',
+  'lit.offer': '香点着了！风要起了，来帮这炷香护住火吗？',
+  play: '玩护香',
+  'game.title': '护香',
+  'game.rules': '风从哪边吹来，就点按那一半屏幕来挡风护火。用电脑时按 ← → 键。',
+  'game.rulesNote': '大约 40 秒，5 点火苗。不会损失什么，放轻松玩就好。',
+  'game.practice': '试玩：和今天全房间的风完全一样。',
+  'game.start': '开始',
+  'game.left': '挡住左边',
+  'game.right': '挡住右边',
+  'game.windLeft': '风从左边来',
+  'game.windRight': '风从右边来',
+  'game.flame': '火苗 {n}/{max}',
+  'game.combo': '连击 {n}',
+  'game.score': '静心分 {n}',
+  'game.quit': '结束本轮',
+  'judge.perfect': 'PERFECT',
+  'judge.good': 'GOOD',
+  'judge.miss': '漏风',
+  'judge.wrong': '挡错边',
+  'result.complete': '整轮都护住了火，太厉害了！',
+  'result.flameLow': '香火摇晃，但没有熄灭',
+  'result.flameLowNote': '今天的风有点调皮。深呼吸，再试一次吧。',
+  'result.stars': '3 颗星中得 {n} 颗',
+  'result.score': '静心分：{n}',
+  'result.shields': '挡住 {n}/{total} 阵风',
+  'result.combo': '最长连击：{n}',
+  'result.best': '本机最佳：{n}',
+  'result.newBest': '新纪录！',
+  'result.again': '再玩一次',
+  'result.back': '回到房间',
+  'demo.title': '护香试玩',
+  'demo.note': '这是试玩，不是真正的房间。不会向服务器保存任何内容。',
+  'demo.light': '看上香',
+};
+
 export type RoomGameTextKey = keyof typeof vi;
 
-export const useRoomGameText = createFeatureText(vi, en);
+export const useRoomGameText = createFeatureText(vi, en, zhCN);

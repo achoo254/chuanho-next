@@ -1,12 +1,12 @@
-import { readPreferences, subscribePreferences } from '@achoo254/app-shell/preferences';
+import { type PreferenceEnvironment, readPreferences, subscribePreferences } from '@achoo254/app-shell/preferences';
 import { type ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { brand } from '../brand';
-import { type MessageKey, type Messages, en, vi } from './messages';
+import { LOCALES, type Locale, isLocale } from './locales';
+import { type MessageKey, type Messages, en, vi, zhCN } from './messages';
 
-export const LOCALES = ['vi', 'en'] as const;
-export type Locale = (typeof LOCALES)[number];
+export { LOCALES, type Locale, isLocale };
 
-const DICTIONARIES: Record<Locale, Messages> = { vi, en };
+const DICTIONARIES: Record<Locale, Messages> = { vi, en, 'zh-CN': zhCN };
 
 export type Translate = (key: MessageKey, vars?: Record<string, string | number>) => string;
 
@@ -24,8 +24,6 @@ export function translator(locale: Locale): Translate {
   return (key, vars) => format(dictionary[key], vars);
 }
 
-export const isLocale = (value: unknown): value is Locale => value === 'vi' || value === 'en';
-
 /** `?lang=` wins (a shared link), then the saved choice, then Vietnamese. */
 export function initialLocale(search: string, stored: Locale | undefined): Locale {
   const fromQuery = new URLSearchParams(search).get('lang');
@@ -33,10 +31,12 @@ export function initialLocale(search: string, stored: Locale | undefined): Local
   return stored ?? 'vi';
 }
 
-/** The language picked in any hoandat.com app (shared cookie `hd_lang`), if any. */
-function storedLocale(): Locale | undefined {
-  const lang = readPreferences({ domain: brand.primaryTenant.domain }).lang;
-  return isLocale(lang) ? lang : undefined;
+/**
+ * The language picked in any hoandat.com app (shared cookie `hd_lang`), if it is one of this app's. `env` is the
+ * page by default; tests pass their own.
+ */
+export function storedLocale(env?: PreferenceEnvironment): Locale | undefined {
+  return readPreferences({ domain: brand.primaryTenant.domain, locales: LOCALES }, env).lang;
 }
 
 interface I18n {

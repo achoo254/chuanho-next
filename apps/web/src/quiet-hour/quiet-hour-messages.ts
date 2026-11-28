@@ -1,4 +1,4 @@
-/** Words of the "Giờ Tĩnh" chip (Vietnamese and English). */
+/** Words of the "Giờ Tĩnh" chip (Vietnamese, English and Simplified Chinese). */
 import { createFeatureText } from '../features/feature-text';
 
 const vi = {
@@ -21,4 +21,14 @@ const en: Record<keyof typeof vi, string> = {
   milestones: '{n} shared milestones reached',
 };
 
-export const useQuietHourText = createFeatureText(vi, en);
+const zhCN: Record<keyof typeof vi, string> = {
+  name: '静心时刻',
+  before: '静心时刻 {time} · 还有 {n} 分钟',
+  open: '静心时刻 · {total} 声 · 剩 {n} 分钟',
+  after: '今晚的静心时刻 · {total} 声',
+  about: '每晚 {time}，大家一起敲木鱼半小时。在无尽木鱼里敲的每一声都会计入共同总数。',
+  guestHint: '登录后，你敲的木鱼声才会计入共同总数。',
+  milestones: '已达成 {n} 个共同里程碑',
+};
+
+export const useQuietHourText = createFeatureText(vi, en, zhCN);
